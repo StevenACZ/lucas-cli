@@ -2,12 +2,18 @@ import { Command } from "commander";
 import { hostname } from "os";
 import { exec } from "child_process";
 import { getApiUrl, saveCredentials } from "../../lib/config.js";
-import { output } from "../../lib/output.js";
 
-// Abre URL en el navegador del sistema
 function openBrowser(url: string): void {
   const cmd = process.platform === "darwin" ? "open" : "xdg-open";
-  exec(`${cmd} ${url}`);
+  exec(`${cmd} "${url}"`);
+}
+
+function write(text: string): void {
+  process.stderr.write(text);
+}
+
+function writeln(text: string): void {
+  process.stderr.write(text + "\n");
 }
 
 async function pollForApproval(
@@ -16,32 +22,56 @@ async function pollForApproval(
   deviceName: string,
 ): Promise<void> {
   const maxAttempts = 180;
+  write("\n  Waiting for authorization ");
+
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((r) => setTimeout(r, 5000));
-    const res = await fetch(`${apiUrl}/api/cli/poll/${code}`);
+    await new Promise((r) => setTimeout(r, 3000));
+    write(".");
 
-    if (!res.ok) continue;
-    const data = (await res.json()) as {
-      status: string;
-      token?: string;
-      expiresAt?: string;
-    };
+    try {
+      const res = await fetch(`${apiUrl}/api/cli/poll/${code}`);
+      if (!res.ok) continue;
 
-    if (data.status === "APPROVED" && data.token) {
-      saveCredentials({
-        token: data.token,
-        apiUrl,
-        deviceName,
-        expiresAt: data.expiresAt ?? "",
-      });
-      output.success({ message: "Authenticated successfully" });
-      return;
-    }
-    if (data.status === "EXPIRED") {
-      output.error("Device code expired. Please try again.");
+      const data = (await res.json()) as {
+        status: string;
+        token?: string;
+        expiresAt?: string;
+      };
+
+      if (data.status === "approved" && data.token) {
+        saveCredentials({
+          token: data.token,
+          apiUrl,
+          deviceName,
+          expiresAt: data.expiresAt ?? "",
+        });
+        writeln("\n");
+        writeln("  \x1b[32m✓\x1b[0m Authenticated successfully!");
+        writeln(`  \x1b[2mDevice: ${deviceName}\x1b[0m`);
+        writeln(
+          `  \x1b[2mExpires: ${new Date(data.expiresAt ?? "").toLocaleDateString()}\x1b[0m`,
+        );
+        writeln("");
+        return;
+      }
+
+      if (data.status === "expired") {
+        writeln("\n");
+        writeln("  \x1b[31m✗\x1b[0m Device code expired. Run again:");
+        writeln("    lucas auth login");
+        writeln("");
+        process.exit(1);
+      }
+    } catch {
+      // Network error, keep polling
     }
   }
-  output.error("Polling timed out. Please try again.");
+
+  writeln("\n");
+  writeln("  \x1b[31m✗\x1b[0m Polling timed out. Run again:");
+  writeln("    lucas auth login");
+  writeln("");
+  process.exit(1);
 }
 
 export const loginCommand = new Command("login")
@@ -59,7 +89,8 @@ export const loginCommand = new Command("login")
     });
 
     if (!res.ok) {
-      output.error("Failed to initiate device auth", res.status);
+      writeln("  \x1b[31m✗\x1b[0m Failed to connect to LucasApp API");
+      process.exit(1);
     }
 
     const { deviceCode, verifyUrl } = (await res.json()) as {
@@ -67,11 +98,15 @@ export const loginCommand = new Command("login")
       verifyUrl: string;
     };
 
-    output.success({
-      message: "Open this URL to authorize",
-      deviceCode,
-      verifyUrl,
-    });
+    writeln("");
+    writeln("  \x1b[1mLucasApp CLI\x1b[0m — Device Authorization");
+    writeln("");
+    writeln(`  Your code: \x1b[1;36m${deviceCode}\x1b[0m`);
+    writeln("");
+    writeln("  \x1b[2mOpening browser...\x1b[0m");
+    writeln(
+      `  \x1b[2mIf it didn't open, visit:\x1b[0m \x1b[4m${verifyUrl}\x1b[0m`,
+    );
 
     openBrowser(verifyUrl);
     await pollForApproval(apiUrl, deviceCode, deviceName);
