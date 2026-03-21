@@ -6,12 +6,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/StevenACZ/lucas-cli"
+    "url": "git+https://github.com/StevenACZ/lucas-cli.git"
   },
   "homepage": "https://lucas.stevenacz.com/cli",
   "type": "module",
   "bin": {
-    "lucas": "./dist/index.js"
+    "lucas": "dist/index.js"
   },
   "scripts": {
     "dev": "bun run src/index.ts",
