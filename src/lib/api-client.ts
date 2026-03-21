@@ -14,6 +14,10 @@ export async function apiRequest<T>(
     output.error("Not authenticated. Run: lucas auth login");
   }
 
+  if (creds!.expiresAt && new Date(creds!.expiresAt) <= new Date()) {
+    output.error("Token expired. Run: lucas auth login");
+  }
+
   const apiUrl = creds!.apiUrl ?? getApiUrl();
   const url = new URL(path, apiUrl);
 

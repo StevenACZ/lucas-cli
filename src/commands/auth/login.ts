@@ -1,11 +1,11 @@
 import { Command } from "commander";
 import { hostname } from "os";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { getApiUrl, saveCredentials } from "../../lib/config.js";
 
 function openBrowser(url: string): void {
   const cmd = process.platform === "darwin" ? "open" : "xdg-open";
-  exec(`${cmd} "${url}"`);
+  execFile(cmd, [url], () => {});
 }
 
 function write(text: string): void {
