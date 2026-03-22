@@ -11,6 +11,7 @@ src/
     config.ts                     - Credential storage (~/.config/lucas/)
     api-client.ts                 - HTTP client with Bearer auth
     output.ts                     - JSON output helpers (success/error)
+    body-builder.ts               - Request body builder with --no-flag unset support
   commands/
     auth/
       login.ts                    - Device authorization flow
@@ -29,6 +30,7 @@ src/
     transfers/
       list.ts                     - List all transfers
       create.ts                   - Create transfer (from, to, amount, exchange-rate)
+      update.ts                   - Update transfer by ID
       delete.ts                   - Delete transfer by ID
     subscriptions/
       list.ts                     - List all subscriptions
@@ -39,6 +41,7 @@ src/
     loans/
       list.ts                     - List all loans
       create.ts                   - Create loan (name, principal, account)
+      update.ts                   - Update loan by ID
       pay.ts                      - Make a loan payment
       delete.ts                   - Delete loan by ID
     stats/
@@ -143,6 +146,7 @@ Login flow writes human-readable output to stderr (not JSON) since it is interac
 | DELETE | /api/transactions/:id            | transactions delete     |
 | GET    | /api/transfers                   | transfers list          |
 | POST   | /api/transfers                   | transfers create        |
+| PUT    | /api/transfers/:id               | transfers update        |
 | DELETE | /api/transfers/:id               | transfers delete        |
 | GET    | /api/subscriptions               | subscriptions list      |
 | POST   | /api/subscriptions               | subscriptions create    |
@@ -152,6 +156,7 @@ Login flow writes human-readable output to stderr (not JSON) since it is interac
 | GET    | /api/loans                       | loans list              |
 | POST   | /api/loans                       | loans create            |
 | POST   | /api/loans/:id/pay               | loans pay               |
+| PUT    | /api/loans/:id                   | loans update            |
 | DELETE | /api/loans/:id                   | loans delete            |
 | GET    | /api/stats/summary               | stats summary           |
 | GET    | /api/stats/monthly               | stats monthly           |

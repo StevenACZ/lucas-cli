@@ -70,7 +70,11 @@ lucas accounts create \
   --bank "BCP" \
   --currency PEN \
   --balance 1000                    # Create an account
-lucas accounts update <id> --name "New Name"  # Update account
+lucas accounts update <id> \
+  --name "New Name" \
+  --balance 5000 \
+  --credit-limit 10000 \
+  --is-archived true                # Update account
 lucas accounts delete <id>          # Delete account
 ```
 
@@ -117,6 +121,12 @@ lucas transfers create \
   --description "Monthly savings" \
   --exchange-rate 3.72             # Create a transfer
 
+lucas transfers update <id> \
+  --amount 1500 \
+  --exchange-rate 3.75              # Update a transfer
+lucas transfers update <id> \
+  --amount 1000 \
+  --no-notes                        # Update with unset
 lucas transfers delete <id>         # Delete transfer
 ```
 
@@ -128,12 +138,15 @@ lucas subscriptions create \
   --name "Netflix" \
   --amount 44.90 \
   --account-id <id> \
+  --currency PEN \
   --frequency MONTHLY \
+  --billing-day 1 \
   --next-billing-date 2026-04-01   # Create a subscription
 
 lucas subscriptions update <id> \
   --amount 49.90 \
-  --frequency YEARLY               # Update subscription
+  --frequency YEARLY \
+  --no-account-id                  # Update subscription (unset account)
 
 lucas subscriptions mark-paid <id>  # Mark as paid
 lucas subscriptions delete <id>     # Delete subscription
@@ -149,9 +162,20 @@ lucas loans create \
   --name "Car Loan" \
   --principal 25000 \
   --account-id <id> \
+  --currency PEN \
   --interest-rate 12.5 \
   --installments 36 \
+  --first-due-date 2026-02-15 \
+  --interval-unit MONTH \
+  --interval-count 1 \
   --start-date 2026-01-15          # Create a loan
+
+lucas loans update <id> \
+  --name "Auto Loan" \
+  --interest-rate 5.5              # Update a loan
+lucas loans update <id> \
+  --no-agreed-installments \
+  --no-target-payment              # Update with unset
 
 lucas loans pay <id> --amount 750   # Make a payment
 lucas loans delete <id>             # Delete loan
@@ -178,6 +202,18 @@ lucas exchange-rate convert \
   --from USD \
   --to PEN \
   --amount 100                      # Convert currencies
+```
+
+### Unsetting Optional Fields
+
+Use `--no-<field>` to clear an optional field:
+
+```bash
+lucas subscriptions update <id> --no-account-id    # Remove linked account
+lucas transactions update <id> --no-category-id    # Clear category
+lucas accounts update <id> --no-credit-limit       # Remove credit limit
+lucas transfers update <id> --no-notes             # Clear notes
+lucas loans update <id> --no-agreed-installments   # Remove agreed installments
 ```
 
 ## AI Integration
