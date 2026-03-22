@@ -54,7 +54,7 @@ const program = new Command();
 program
   .name("lucas")
   .description("LucasApp CLI - Financial data management for AI agents")
-  .version("0.1.0");
+  .version("0.2.0");
 
 // Grupo: auth
 const auth = program.command("auth").description("Authentication commands");
