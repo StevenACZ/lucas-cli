@@ -21,6 +21,7 @@ import { deleteTransactionCommand } from "./commands/transactions/delete.js";
 // Transfers
 import { listTransfersCommand } from "./commands/transfers/list.js";
 import { createTransferCommand } from "./commands/transfers/create.js";
+import { updateTransferCommand } from "./commands/transfers/update.js";
 import { deleteTransferCommand } from "./commands/transfers/delete.js";
 
 // Subscriptions
@@ -33,6 +34,7 @@ import { markPaidCommand } from "./commands/subscriptions/mark-paid.js";
 // Loans
 import { listLoansCommand } from "./commands/loans/list.js";
 import { createLoanCommand } from "./commands/loans/create.js";
+import { updateLoanCommand } from "./commands/loans/update.js";
 import { payLoanCommand } from "./commands/loans/pay.js";
 import { deleteLoanCommand } from "./commands/loans/delete.js";
 
@@ -82,6 +84,7 @@ transactions.addCommand(deleteTransactionCommand);
 const transfers = program.command("transfers").description("Manage transfers");
 transfers.addCommand(listTransfersCommand);
 transfers.addCommand(createTransferCommand);
+transfers.addCommand(updateTransferCommand);
 transfers.addCommand(deleteTransferCommand);
 
 // Grupo: subscriptions
@@ -98,6 +101,7 @@ subscriptions.addCommand(markPaidCommand);
 const loans = program.command("loans").description("Manage loans");
 loans.addCommand(listLoansCommand);
 loans.addCommand(createLoanCommand);
+loans.addCommand(updateLoanCommand);
 loans.addCommand(payLoanCommand);
 loans.addCommand(deleteLoanCommand);
 

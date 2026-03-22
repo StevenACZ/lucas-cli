@@ -3,20 +3,17 @@ import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
 import { buildBody } from "../../lib/body-builder.js";
 
-export const createTransferCommand = new Command("create")
-  .description("Create a new transfer")
-  .requiredOption("--from-account-id <id>", "Source account ID")
-  .requiredOption("--to-account-id <id>", "Destination account ID")
+export const updateTransferCommand = new Command("update")
+  .description("Update a transfer")
+  .argument("<id>", "Transfer ID")
   .requiredOption("--amount <amount>", "Transfer amount")
   .option("--to-amount <amount>", "Destination amount (cross-currency)")
-  .option("--description <desc>", "Transfer description")
+  .option("--description <desc>", "Description")
   .option("--date <date>", "Date (YYYY-MM-DD)")
   .option("--notes <notes>", "Notes")
   .option("--exchange-rate <rate>", "Exchange rate")
-  .action(async (opts) => {
+  .action(async (id, opts) => {
     const body = buildBody(opts, [
-      { opt: "fromAccountId", body: "fromAccountId" },
-      { opt: "toAccountId", body: "toAccountId" },
       { opt: "amount", body: "amount", type: "number" },
       { opt: "toAmount", body: "toAmount", type: "number" },
       { opt: "description", body: "description" },
@@ -24,6 +21,6 @@ export const createTransferCommand = new Command("create")
       { opt: "notes", body: "notes" },
       { opt: "exchangeRate", body: "exchangeRate", type: "number" },
     ]);
-    const data = await apiRequest("POST", "/api/transfers", body);
+    const data = await apiRequest("PUT", `/api/transfers/${id}`, body);
     output.success(data);
   });
