@@ -126,7 +126,7 @@ lucas transfers update <id> \
   --exchange-rate 3.75              # Update a transfer
 lucas transfers update <id> \
   --amount 1000 \
-  --no-notes                        # Update with unset
+  --clear-notes                     # Update with unset
 lucas transfers delete <id>         # Delete transfer
 ```
 
@@ -146,11 +146,16 @@ lucas subscriptions create \
 lucas subscriptions update <id> \
   --amount 49.90 \
   --frequency YEARLY \
-  --no-account-id                  # Update subscription (unset account)
+  --billing-day 30 \
+  --clear-account-id               # Update subscription (unset account)
 
 lucas subscriptions mark-paid <id>  # Mark as paid
 lucas subscriptions delete <id>     # Delete subscription
 ```
+
+`subscriptions list` also returns AI-friendly derived fields such as
+`computedStatus`, `latestChargeStatus`, `lastChargeDate`, and
+`lastBillingExplanation`.
 
 Frequencies: `WEEKLY`, `MONTHLY`, `YEARLY`
 
@@ -172,12 +177,14 @@ lucas loans create \
 
 lucas loans update <id> \
   --name "Auto Loan" \
+  --principal 3200 \
   --interest-rate 5.5              # Update a loan
 lucas loans update <id> \
-  --no-agreed-installments \
-  --no-target-payment              # Update with unset
+  --clear-agreed-installments \
+  --clear-target-payment           # Update with unset
 
-lucas loans pay <id> --amount 750   # Make a payment
+lucas loans pay <id> --amount 750 --verified   # Make a payment
+lucas loans mark-paid <id> --verified          # Pay next pending installment
 lucas loans delete <id>             # Delete loan
 ```
 
@@ -206,14 +213,14 @@ lucas exchange-rate convert \
 
 ### Unsetting Optional Fields
 
-Use `--no-<field>` to clear an optional field:
+Use `--clear-<field>` to clear an optional field:
 
 ```bash
-lucas subscriptions update <id> --no-account-id    # Remove linked account
-lucas transactions update <id> --no-category-id    # Clear category
-lucas accounts update <id> --no-credit-limit       # Remove credit limit
-lucas transfers update <id> --no-notes             # Clear notes
-lucas loans update <id> --no-agreed-installments   # Remove agreed installments
+lucas subscriptions update <id> --clear-account-id        # Remove linked account
+lucas transactions update <id> --clear-category-id        # Clear category
+lucas accounts update <id> --clear-credit-limit           # Remove credit limit
+lucas transfers update <id> --clear-notes                 # Clear notes
+lucas loans update <id> --clear-agreed-installments       # Remove agreed installments
 ```
 
 ## AI Integration

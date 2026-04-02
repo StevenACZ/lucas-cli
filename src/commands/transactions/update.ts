@@ -11,17 +11,20 @@ export const updateTransactionCommand = new Command("update")
   .option("--type <type>", "Type (INCOME|EXPENSE)")
   .option("--date <date>", "Date (YYYY-MM-DD)")
   .option("--category-id <id>", "Category ID")
+  .option("--clear-category-id", "Clear category")
   .option("--notes <notes>", "Additional notes")
+  .option("--clear-notes", "Clear notes")
   .option("--merchant <merchant>", "Merchant name")
+  .option("--clear-merchant", "Clear merchant")
   .action(async (id: string, opts) => {
     const body = buildBody(opts, [
       { opt: "description", body: "description" },
       { opt: "amount", body: "amount", type: "number" },
       { opt: "type", body: "type" },
       { opt: "date", body: "date" },
-      { opt: "categoryId", body: "categoryId" },
-      { opt: "notes", body: "notes" },
-      { opt: "merchant", body: "merchant" },
+      { opt: "categoryId", body: "categoryId", clearOpt: "clearCategoryId" },
+      { opt: "notes", body: "notes", clearOpt: "clearNotes" },
+      { opt: "merchant", body: "merchant", clearOpt: "clearMerchant" },
     ]);
     const data = await apiRequest("PUT", `/api/transactions/${id}`, body);
     output.success(data);
