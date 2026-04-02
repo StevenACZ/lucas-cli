@@ -11,7 +11,11 @@ src/
     config.ts                     - Credential storage (~/.config/lucas/)
     api-client.ts                 - HTTP client with Bearer auth
     output.ts                     - JSON output helpers (success/error)
-    body-builder.ts               - Request body builder with --no-flag unset support
+    body-builder.ts               - Request body builder with --clear-* null support
+    loan-domain.ts                - Loan installment helpers for AI-safe flows
+    loan-verification.ts          - Post-payment verification helpers
+    number-parser.ts              - Strict numeric parsing for commands
+    subscription-enrichment.ts    - Derived subscription fields for AI output
   commands/
     auth/
       login.ts                    - Device authorization flow
@@ -43,6 +47,7 @@ src/
       create.ts                   - Create loan (name, principal, account)
       update.ts                   - Update loan by ID
       pay.ts                      - Make a loan payment
+      mark-paid.ts                - Pay the next pending installment
       delete.ts                   - Delete loan by ID
     stats/
       summary.ts                  - Financial summary

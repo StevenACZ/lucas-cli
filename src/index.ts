@@ -36,6 +36,7 @@ import { listLoansCommand } from "./commands/loans/list.js";
 import { createLoanCommand } from "./commands/loans/create.js";
 import { updateLoanCommand } from "./commands/loans/update.js";
 import { payLoanCommand } from "./commands/loans/pay.js";
+import { markPaidLoanCommand } from "./commands/loans/mark-paid.js";
 import { deleteLoanCommand } from "./commands/loans/delete.js";
 
 // Stats
@@ -54,7 +55,7 @@ const program = new Command();
 program
   .name("lucas")
   .description("LucasApp CLI - Financial data management for AI agents")
-  .version("0.2.0");
+  .version("0.3.0");
 
 // Grupo: auth
 const auth = program.command("auth").description("Authentication commands");
@@ -103,6 +104,7 @@ loans.addCommand(listLoansCommand);
 loans.addCommand(createLoanCommand);
 loans.addCommand(updateLoanCommand);
 loans.addCommand(payLoanCommand);
+loans.addCommand(markPaidLoanCommand);
 loans.addCommand(deleteLoanCommand);
 
 // Grupo: stats
