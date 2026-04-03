@@ -48,6 +48,7 @@ src/
       update.ts                   - Update loan by ID
       pay.ts                      - Make a loan payment
       mark-paid.ts                - Pay the next pending installment
+      unmark-paid.ts              - Reverse a loan payment (default: most recent)
       delete.ts                   - Delete loan by ID
     stats/
       summary.ts                  - Financial summary
@@ -161,6 +162,7 @@ Login flow writes human-readable output to stderr (not JSON) since it is interac
 | GET    | /api/loans                       | loans list              |
 | POST   | /api/loans                       | loans create            |
 | POST   | /api/loans/:id/pay               | loans pay               |
+| POST   | /api/loans/:id/reverse-payment   | loans unmark-paid       |
 | PUT    | /api/loans/:id                   | loans update            |
 | DELETE | /api/loans/:id                   | loans delete            |
 | GET    | /api/stats/summary               | stats summary           |
