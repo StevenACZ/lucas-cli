@@ -39,6 +39,7 @@ import { createLoanCommand } from "./commands/loans/create.js";
 import { updateLoanCommand } from "./commands/loans/update.js";
 import { payLoanCommand } from "./commands/loans/pay.js";
 import { markPaidLoanCommand } from "./commands/loans/mark-paid.js";
+import { unmarkPaidLoanCommand } from "./commands/loans/unmark-paid.js";
 import { deleteLoanCommand } from "./commands/loans/delete.js";
 
 // Stats
@@ -107,6 +108,7 @@ loans.addCommand(createLoanCommand);
 loans.addCommand(updateLoanCommand);
 loans.addCommand(payLoanCommand);
 loans.addCommand(markPaidLoanCommand);
+loans.addCommand(unmarkPaidLoanCommand);
 loans.addCommand(deleteLoanCommand);
 
 // Grupo: stats
