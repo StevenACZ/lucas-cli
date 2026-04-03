@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { maybeNotifyForUpdate } from "./lib/update-notifier.js";
+import { CLI_VERSION } from "./lib/version.js";
 
 // Auth
 import { loginCommand } from "./commands/auth/login.js";
@@ -55,7 +57,7 @@ const program = new Command();
 program
   .name("lucas")
   .description("LucasApp CLI - Financial data management for AI agents")
-  .version("0.3.0");
+  .version(CLI_VERSION);
 
 // Grupo: auth
 const auth = program.command("auth").description("Authentication commands");
@@ -123,4 +125,5 @@ const exchangeRate = program
   .description("Currency exchange");
 exchangeRate.addCommand(convertCommand);
 
-program.parse();
+await maybeNotifyForUpdate(CLI_VERSION);
+await program.parseAsync(process.argv);
