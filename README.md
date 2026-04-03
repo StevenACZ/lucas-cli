@@ -7,7 +7,7 @@ All output is structured JSON, making it ideal for programmatic consumption by A
 ## Installation
 
 ```bash
-npm install -g lucas-cli
+npm install -g lucasapp-cli
 ```
 
 Or run directly with Bun:
@@ -34,6 +34,7 @@ lucas transactions list --from 2026-03-01
 
 # Get a financial summary
 lucas stats summary
+lucas stats summary --year 2026 --month 3
 ```
 
 ## Commands
@@ -192,8 +193,16 @@ lucas loans delete <id>             # Delete loan
 
 ```bash
 lucas stats summary                 # Financial summary
+lucas stats summary --year 2026 --month 3  # Inspect a specific month
 lucas stats monthly                 # Monthly statistics
-lucas stats by-category             # Spending by category
+lucas stats by-category --year 2026 --month 3  # Spending by category
+```
+
+When a newer CLI version is available, interactive terminals will show a short
+update notice with the recommended command:
+
+```bash
+npm install -g lucasapp-cli@latest
 ```
 
 ### Categories

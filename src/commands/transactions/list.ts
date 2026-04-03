@@ -13,13 +13,13 @@ export const listTransactionsCommand = new Command("list")
   .option("--take <n>", "Take N records")
   .action(async (opts) => {
     const params: Record<string, string> = {};
-    if (opts.from) params.from = opts.from;
-    if (opts.to) params.to = opts.to;
+    if (opts.from) params.startDate = opts.from;
+    if (opts.to) params.endDate = opts.to;
     if (opts.categoryId) params.categoryId = opts.categoryId;
     if (opts.accountId) params.accountId = opts.accountId;
     if (opts.type) params.type = opts.type;
-    if (opts.skip) params.skip = opts.skip;
-    if (opts.take) params.take = opts.take;
+    if (opts.skip) params.offset = opts.skip;
+    if (opts.take) params.limit = opts.take;
 
     const data = await apiRequest(
       "GET",
