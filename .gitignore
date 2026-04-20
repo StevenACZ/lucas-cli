@@ -37,3 +37,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 *.dump
 *.sql
 dev-fixtures/
+
+# Private docs (kept local, not shipped in the public repo or on npm)
+docs/
