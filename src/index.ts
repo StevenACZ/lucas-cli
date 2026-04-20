@@ -13,6 +13,7 @@ import { listAccountsCommand } from "./commands/accounts/list.js";
 import { createAccountCommand } from "./commands/accounts/create.js";
 import { updateAccountCommand } from "./commands/accounts/update.js";
 import { deleteAccountCommand } from "./commands/accounts/delete.js";
+import { debtDetailCommand } from "./commands/accounts/debt-detail.js";
 
 // Transactions
 import { listTransactionsCommand } from "./commands/transactions/list.js";
@@ -74,6 +75,7 @@ accounts.addCommand(listAccountsCommand);
 accounts.addCommand(createAccountCommand);
 accounts.addCommand(updateAccountCommand);
 accounts.addCommand(deleteAccountCommand);
+accounts.addCommand(debtDetailCommand);
 
 // Grupo: transactions
 const transactions = program
