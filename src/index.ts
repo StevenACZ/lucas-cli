@@ -54,6 +54,13 @@ import { listCategoriesCommand } from "./commands/categories/list.js";
 // Exchange rate
 import { convertCommand } from "./commands/exchange-rate/convert.js";
 
+// AI
+import { aiUsageCommand } from "./commands/ai/usage.js";
+import { parseExpensesCommand } from "./commands/ai/parse-expenses.js";
+import { parseExpensesImageCommand } from "./commands/ai/parse-expenses-image.js";
+import { aiInsightsCommand } from "./commands/ai/insights.js";
+import { lucasChatMessageCommand } from "./commands/ai/chat-message.js";
+
 const program = new Command();
 
 program
@@ -128,6 +135,14 @@ const exchangeRate = program
   .command("exchange-rate")
   .description("Currency exchange");
 exchangeRate.addCommand(convertCommand);
+
+// Grupo: ai
+const ai = program.command("ai").description("LucasApp AI tools");
+ai.addCommand(aiUsageCommand);
+ai.addCommand(parseExpensesCommand);
+ai.addCommand(parseExpensesImageCommand);
+ai.addCommand(aiInsightsCommand);
+ai.addCommand(lucasChatMessageCommand);
 
 await maybeNotifyForUpdate(CLI_VERSION);
 await program.parseAsync(process.argv);

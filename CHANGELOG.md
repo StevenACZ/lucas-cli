@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- `lucas ai usage`, `parse-expenses`, `parse-expenses-image`, `insights`, and `chat-message` commands for the current LucasApp AI endpoints.
+
+### Changed
+
+- Public plan copy now exposes only `FREE` and `PREMIUM`; Premium is `$4/month` with unlimited accounts, unlimited subscriptions, and AI limits of 50/day, 300/week, and 1000/month.
+- Receipt image parsing now documents and enforces a maximum of 10 images per request.
+- Backend limit errors (`AI_PLAN_REQUIRED`, `AI_LIMIT_REACHED`, `SUBSCRIPTION_REQUIRED`, `ACCOUNT_LIMIT_EXCEEDED`) now map to CLI-friendly messages.
+
 ## [0.5.0] - 2026-04-20
 
 ### Added
