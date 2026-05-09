@@ -35,6 +35,10 @@ lucas transactions list --from 2026-03-01
 # Get a financial summary
 lucas stats summary
 lucas stats summary --year 2026 --month 3
+
+# Check AI usage and parse expenses
+lucas ai usage
+lucas ai parse-expenses "lunch at Pardos S/ 35" --date 2026-05-08
 ```
 
 ## Commands
@@ -50,6 +54,7 @@ lucas stats summary --year 2026 --month 3
 | `stats`         | Financial statistics and reports  |
 | `categories`    | View transaction categories       |
 | `exchange-rate` | Currency conversion               |
+| `ai`            | AI usage, parsing, insights, chat |
 
 ### Authentication
 
@@ -219,6 +224,35 @@ lucas exchange-rate convert \
   --to PEN \
   --amount 100                      # Convert currencies
 ```
+
+### AI
+
+```bash
+lucas ai usage                      # Show AI usage and limits
+lucas ai usage --type chat          # Filter usage by type when supported
+
+lucas ai parse-expenses \
+  "lunch at Pardos S/ 35" \
+  --date 2026-05-08                 # Parse expense text
+
+lucas ai parse-expenses-image \
+  receipt-1.jpg receipt-2.png \
+  --date 2026-05-08                 # Parse up to 10 receipt images
+
+lucas ai insights \
+  "How am I doing this month?" \
+  --period month \
+  --currency PEN                    # Request financial insights
+
+lucas ai chat-message \
+  "Show me this week's spending" \
+  --conversation-id <id>            # Send a Lucas Chat message
+```
+
+Public plans are `FREE` and `PREMIUM`. `FREE` includes 0 AI calls, up to 3
+active accounts, and no subscription access. `PREMIUM` costs `$4/month` and
+includes unlimited accounts, unlimited subscriptions, and AI limits of
+50/day, 300/week, and 1000/month.
 
 ### Unsetting Optional Fields
 

@@ -58,6 +58,12 @@ src/
       list.ts                     - List all categories
     exchange-rate/
       convert.ts                  - Currency conversion
+    ai/
+      usage.ts                    - AI usage and limits
+      parse-expenses.ts           - Parse expense text
+      parse-expenses-image.ts     - Parse up to 10 receipt images
+      insights.ts                 - Financial insight prompts
+      chat-message.ts             - Lucas Chat agentic messages
 ```
 
 ## Tech Stack
@@ -170,6 +176,16 @@ Login flow writes human-readable output to stderr (not JSON) since it is interac
 | GET    | /api/stats/by-category           | stats by-category       |
 | GET    | /api/categories                  | categories list         |
 | GET    | /api/exchange-rate/convert       | exchange-rate convert   |
+| GET    | /api/ai/usage                    | ai usage                |
+| POST   | /api/ai/parse-expenses           | ai parse-expenses       |
+| POST   | /api/ai/parse-expenses-image     | ai parse-expenses-image |
+| POST   | /api/ai/insights                 | ai insights             |
+| POST   | /api/lucas-chat/message          | ai chat-message         |
+
+## Public Plans
+
+- `FREE`: 0 AI calls, max 3 active accounts, subscriptions blocked.
+- `PREMIUM`: `$4/month`, unlimited accounts, unlimited subscriptions, AI limits of 50/day, 300/week, and 1000/month.
 
 ## Verification
 

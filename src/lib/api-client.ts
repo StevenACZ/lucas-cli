@@ -1,7 +1,32 @@
 import { loadCredentials, getApiUrl } from "./config.js";
+import { getApiErrorMessage, type ApiErrorPayload } from "./api-errors.js";
 import { output } from "./output.js";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+
+async function readErrorPayload(
+  res: Response,
+): Promise<ApiErrorPayload | string> {
+  const contentType = res.headers?.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    return (await res.json().catch(() => ({}))) as ApiErrorPayload;
+  }
+
+  const jsonSource = typeof res.clone === "function" ? res.clone() : res;
+  const json = await jsonSource.json().catch(() => undefined);
+  if (json && typeof json === "object") {
+    return json as ApiErrorPayload;
+  }
+
+  const text =
+    typeof res.text === "function" ? await res.text().catch(() => "") : "";
+  try {
+    return JSON.parse(text) as ApiErrorPayload;
+  } catch {
+    return text || "Unknown error";
+  }
+}
 
 export async function apiRequest<T>(
   method: HttpMethod,
@@ -43,8 +68,8 @@ export async function apiRequest<T>(
   }
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "Unknown error");
-    output.error(text, res.status);
+    const payload = await readErrorPayload(res);
+    output.error(getApiErrorMessage(payload), res.status, payload);
   }
 
   return (await res.json()) as T;
