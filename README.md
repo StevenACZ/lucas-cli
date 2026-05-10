@@ -38,7 +38,7 @@ lucas stats summary --year 2026 --month 3
 
 # Check AI usage and parse expenses
 lucas ai usage
-lucas ai parse-expenses "lunch at Pardos S/ 35" --date 2026-05-08
+lucas ai parse-expenses "lunch at Pardos S/ 35" --date 2026-05-08 --account-id <id>
 ```
 
 ## Commands
@@ -233,11 +233,13 @@ lucas ai usage --type chat          # Filter usage by type when supported
 
 lucas ai parse-expenses \
   "lunch at Pardos S/ 35" \
-  --date 2026-05-08                 # Parse expense text
+  --date 2026-05-08 \
+  --account-id <id>                 # Parse text and check account duplicates
 
 lucas ai parse-expenses-image \
   receipt-1.jpg receipt-2.png \
-  --date 2026-05-08                 # Parse up to 10 receipt images
+  --date 2026-05-08 \
+  --account-id <id>                 # Parse up to 10 receipt images
 
 lucas ai insights \
   "How am I doing this month?" \
@@ -269,6 +271,7 @@ lucas loans update <id> --clear-agreed-installments       # Remove agreed instal
 ## AI Integration
 
 LucasApp CLI outputs structured JSON exclusively, making it a natural fit for AI agents with terminal access.
+AI parse commands pass backend-owned category metadata through unchanged. Add `--account-id` when the caller wants backend duplicate detection against an account before saving parsed rows.
 
 Tell your AI assistant:
 

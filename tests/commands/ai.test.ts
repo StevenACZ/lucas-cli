@@ -92,24 +92,31 @@ describe("ai commands", () => {
     expect(outputSuccess).toHaveBeenCalledWith(response);
   });
 
-  it("posts text expense parsing requests", async () => {
+  it("posts text expense parsing requests with optional account context", async () => {
     apiRequest.mockResolvedValue({ success: true, transactions: [] });
 
-    await runParseExpenses("almuerzo 10", { date: "2026-05-08" });
+    await runParseExpenses("almuerzo 10", {
+      date: "2026-05-08",
+      accountId: "account-1",
+    });
 
     expect(apiRequest).toHaveBeenCalledWith("POST", "/api/ai/parse-expenses", {
       text: "almuerzo 10",
       date: "2026-05-08",
+      accountId: "account-1",
     });
   });
 
-  it("posts image expense parsing requests", async () => {
+  it("posts image expense parsing requests with optional account context", async () => {
     tempDir = await mkdtemp(join(tmpdir(), "lucas-cli-ai-"));
     const imagePath = join(tempDir, "receipt.jpg");
     await writeFile(imagePath, "fake-image");
     apiRequest.mockResolvedValue({ success: true, transactions: [] });
 
-    await runParseExpensesImage([imagePath], { date: "2026-05-08" });
+    await runParseExpensesImage([imagePath], {
+      date: "2026-05-08",
+      accountId: "account-1",
+    });
 
     expect(apiRequest).toHaveBeenCalledWith(
       "POST",
@@ -122,6 +129,7 @@ describe("ai commands", () => {
           },
         ],
         date: "2026-05-08",
+        accountId: "account-1",
       },
     );
   });
