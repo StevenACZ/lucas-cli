@@ -106,6 +106,29 @@ describe("apiRequest backend error codes", () => {
     });
   });
 
+  it("maps network failures to a CLI-friendly message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      }),
+    );
+
+    await expect(apiRequest("GET", "/api/accounts")).rejects.toThrow(
+      "Cannot reach LucasApp API at https://example.test. Check your connection or run: lucas auth login",
+    );
+
+    expect(outputError).toHaveBeenCalledWith(
+      "Cannot reach LucasApp API at https://example.test. Check your connection or run: lucas auth login",
+      503,
+      {
+        code: "NETWORK_ERROR",
+        apiUrl: "https://example.test",
+        statusCode: 503,
+      },
+    );
+  });
+
   it.each([
     [
       "AI_LIMIT_REACHED",

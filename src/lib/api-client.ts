@@ -101,11 +101,24 @@ export async function apiRequest<T>(
     "Content-Type": "application/json",
   };
 
-  const res = await fetch(url.toString(), {
-    method,
-    headers,
-    ...(body && { body: JSON.stringify(body) }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      method,
+      headers,
+      ...(body && { body: JSON.stringify(body) }),
+    });
+  } catch {
+    return output.error(
+      `Cannot reach LucasApp API at ${apiUrl}. Check your connection or run: lucas auth login`,
+      503,
+      {
+        code: "NETWORK_ERROR",
+        apiUrl,
+        statusCode: 503,
+      },
+    );
+  }
 
   if (res.status === 401) {
     output.error("Not authenticated. Run: lucas auth login", 401);
