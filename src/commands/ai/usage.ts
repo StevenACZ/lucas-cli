@@ -14,5 +14,5 @@ export async function runAIUsage(opts: AIUsageOptions) {
 
 export const aiUsageCommand = new Command("usage")
   .description("Show AI usage and limits")
-  .option("--type <type>", "Usage type filter, for example chat")
+  .option("--type <type>", "Usage type filter, for example lite")
   .action(runAIUsage);

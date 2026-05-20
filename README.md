@@ -55,6 +55,8 @@ lucas ai insights "How am I doing this month?" --period month --currency PEN
 
 Command groups: `auth`, `accounts`, `transactions`, `transfers`,
 `subscriptions`, `loans`, `stats`, `categories`, `exchange-rate`, and `ai`.
+The `ai` group is intentionally limited to usage, text/image expense parsing,
+and read-only insights.
 
 List commands are intentionally agent-friendly:
 

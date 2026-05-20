@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.6] - 2026-05-20
+
+### Removed
+
+- Removed the retired `lucas ai chat-message` command to match the backend AI
+  surface. LucasApp CLI AI now exposes only `usage`, `parse-expenses`,
+  `parse-expenses-image`, and `insights`.
+
+### Changed
+
+- `lucas ai usage` examples and tests now use the supported `lite` service type
+  instead of the removed `chat` type.
+
 ## [0.6.5] - 2026-05-19
 
 ### Changed
@@ -35,7 +48,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- `lucas ai usage`, `parse-expenses`, `parse-expenses-image`, `insights`, and `chat-message` commands for the current LucasApp AI endpoints.
+- `lucas ai usage`, `parse-expenses`, `parse-expenses-image`, and `insights` commands for the current LucasApp AI endpoints.
 
 ### Changed
 

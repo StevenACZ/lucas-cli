@@ -59,7 +59,6 @@ import { aiUsageCommand } from "./commands/ai/usage.js";
 import { parseExpensesCommand } from "./commands/ai/parse-expenses.js";
 import { parseExpensesImageCommand } from "./commands/ai/parse-expenses-image.js";
 import { aiInsightsCommand } from "./commands/ai/insights.js";
-import { lucasChatMessageCommand } from "./commands/ai/chat-message.js";
 
 const program = new Command();
 
@@ -142,7 +141,6 @@ ai.addCommand(aiUsageCommand);
 ai.addCommand(parseExpensesCommand);
 ai.addCommand(parseExpensesImageCommand);
 ai.addCommand(aiInsightsCommand);
-ai.addCommand(lucasChatMessageCommand);
 
 await maybeNotifyForUpdate(CLI_VERSION);
 await program.parseAsync(process.argv);

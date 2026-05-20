@@ -1,6 +1,6 @@
-import { mkdtemp, rm, writeFile } from "fs/promises";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "fs/promises";
 import { tmpdir } from "os";
-import { join } from "path";
+import { join, relative } from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const apiRequest = vi.fn();
@@ -28,8 +28,18 @@ const { runParseExpenses } =
 const { runParseExpensesImage } =
   await import("../../src/commands/ai/parse-expenses-image.js");
 const { runInsights } = await import("../../src/commands/ai/insights.js");
-const { runLucasChatMessage } =
-  await import("../../src/commands/ai/chat-message.js");
+
+async function listFiles(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = await Promise.all(
+    entries.map(async (entry) => {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) return listFiles(path);
+      return [path];
+    }),
+  );
+  return files.flat();
+}
 
 describe("ai commands", () => {
   let tempDir: string | undefined;
@@ -84,10 +94,10 @@ describe("ai commands", () => {
     };
     apiRequest.mockResolvedValue(response);
 
-    await runAIUsage({ type: "chat" });
+    await runAIUsage({ type: "lite" });
 
     expect(apiRequest).toHaveBeenCalledWith("GET", "/api/ai/usage", undefined, {
-      type: "chat",
+      type: "lite",
     });
     expect(outputSuccess).toHaveBeenCalledWith(response);
   });
@@ -159,14 +169,18 @@ describe("ai commands", () => {
     });
   });
 
-  it("posts Lucas Chat messages", async () => {
-    apiRequest.mockResolvedValue({ success: true, data: {} });
+  it("does not ship the retired Lucas Chat command or endpoint", async () => {
+    const sourceFiles = await listFiles(join(process.cwd(), "src"));
+    const matches: string[] = [];
 
-    await runLucasChatMessage("hola Lucas", { conversationId: "conv_1" });
+    for (const file of sourceFiles) {
+      if (!file.endsWith(".ts")) continue;
+      const text = await readFile(file, "utf8");
+      if (/chat-message|lucas-chat|Lucas Chat/i.test(text)) {
+        matches.push(relative(process.cwd(), file));
+      }
+    }
 
-    expect(apiRequest).toHaveBeenCalledWith("POST", "/api/lucas-chat/message", {
-      message: "hola Lucas",
-      conversationId: "conv_1",
-    });
+    expect(matches).toEqual([]);
   });
 });
