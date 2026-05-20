@@ -16,6 +16,13 @@ function writeln(text: string): void {
   process.stderr.write(text + "\n");
 }
 
+function failApiConnection(apiUrl: string): never {
+  writeln(
+    `  \x1b[31m✗\x1b[0m Cannot reach LucasApp API at ${apiUrl}. Check your connection or use --api-url https://lucas.stevenacz.com`,
+  );
+  process.exit(1);
+}
+
 async function pollForApproval(
   apiUrl: string,
   deviceCode: string,
@@ -87,15 +94,19 @@ export async function runLogin(opts: RunLoginOptions = {}): Promise<void> {
   const apiUrl = opts.apiUrl ?? getApiUrl();
   const deviceName = opts.deviceName ?? `${hostname()} - CLI`;
 
-  const res = await fetch(`${apiUrl}/api/cli/device-auth`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ deviceName }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${apiUrl}/api/cli/device-auth`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deviceName }),
+    });
+  } catch {
+    failApiConnection(apiUrl);
+  }
 
   if (!res.ok) {
-    writeln("  \x1b[31m✗\x1b[0m Failed to connect to LucasApp API");
-    process.exit(1);
+    failApiConnection(apiUrl);
   }
 
   const { deviceCode, userCode, verifyUrl } = (await res.json()) as {

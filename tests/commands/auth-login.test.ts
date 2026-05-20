@@ -61,4 +61,31 @@ describe("auth login", () => {
       expect.objectContaining({ token: "cli-token" }),
     );
   });
+
+  it("prints a friendly error when device auth cannot reach the API", async () => {
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
+      throw new Error(`process.exit ${code}`);
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      }),
+    );
+
+    await expect(
+      runLogin({
+        apiUrl: "http://localhost:3000",
+        deviceName: "Mac CLI",
+        pollIntervalMs: 1,
+      }),
+    ).rejects.toThrow("process.exit 1");
+
+    const stderr = stderrWrite.mock.calls.map((call) => call[0]).join("");
+    expect(stderr).toContain(
+      "Cannot reach LucasApp API at http://localhost:3000. Check your connection or use --api-url https://lucas.stevenacz.com",
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
+  });
 });
