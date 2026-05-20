@@ -28,17 +28,54 @@ export function withAvailableCredit<T extends AccountsSummaryLike>(data: T): T {
   return { ...data, accounts };
 }
 
+export function withArchivedAccounts<T extends AccountsSummaryLike>(
+  data: T,
+  archivedAccounts: AccountLike[],
+): T & { archivedAccounts: AccountLike[]; archivedAccountsCount: number } {
+  return {
+    ...data,
+    accounts: [
+      ...(Array.isArray(data.accounts) ? data.accounts : []),
+      ...archivedAccounts,
+    ],
+    archivedAccounts,
+    archivedAccountsCount: archivedAccounts.length,
+  };
+}
+
+export function getArchivedAccountItems(response: unknown): AccountLike[] {
+  if (Array.isArray(response)) return response as AccountLike[];
+  if (
+    response &&
+    typeof response === "object" &&
+    Array.isArray((response as { accounts?: unknown }).accounts)
+  ) {
+    return (response as { accounts: AccountLike[] }).accounts;
+  }
+  if (
+    response &&
+    typeof response === "object" &&
+    Array.isArray((response as { items?: unknown }).items)
+  ) {
+    return (response as { items: AccountLike[] }).items;
+  }
+  return [];
+}
+
 export const listAccountsCommand = new Command("list")
   .description("List all accounts (CREDIT accounts include availableCredit)")
   .option("--include-archived", "Include archived accounts")
   .action(async (opts) => {
-    const params: Record<string, string> = {};
-    if (opts.includeArchived) params.includeArchived = "true";
-    const data = await apiRequest<AccountsSummaryLike>(
-      "GET",
-      "/api/accounts",
-      undefined,
-      params,
+    const data = await apiRequest<AccountsSummaryLike>("GET", "/api/accounts");
+    if (!opts.includeArchived) {
+      output.success(withAvailableCredit(data));
+      return;
+    }
+
+    const archivedAccounts = getArchivedAccountItems(
+      await apiRequest<unknown>("GET", "/api/accounts/archived"),
     );
-    output.success(withAvailableCredit(data));
+    output.success(
+      withAvailableCredit(withArchivedAccounts(data, archivedAccounts)),
+    );
   });

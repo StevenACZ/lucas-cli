@@ -16,6 +16,8 @@ vi.mock("../../src/lib/output.js", () => ({
 
 const { listTransactionsCommand } =
   await import("../../src/commands/transactions/list.js");
+const { buildTransactionListParams } =
+  await import("../../src/commands/transactions/list.js");
 
 describe("transactions list command", () => {
   beforeEach(() => {
@@ -51,5 +53,27 @@ describe("transactions list command", () => {
         limit: "10",
       },
     );
+  });
+
+  it("maps backend-supported advanced filters", () => {
+    expect(
+      buildTransactionListParams({
+        accountIds: "acc-1,acc-2",
+        categoryIds: "cat-1,cat-2",
+        search: "rappi",
+        minAmount: "10",
+        maxAmount: "100",
+        offset: "20",
+        limit: "5",
+      }),
+    ).toEqual({
+      accountIds: "acc-1,acc-2",
+      categoryIds: "cat-1,cat-2",
+      searchText: "rappi",
+      minAmount: "10",
+      maxAmount: "100",
+      offset: "20",
+      limit: "5",
+    });
   });
 });

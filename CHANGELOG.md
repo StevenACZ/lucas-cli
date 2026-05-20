@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.5] - 2026-05-19
+
+### Changed
+
+- `subscriptions list` now accepts the current backend paginated response shape
+  and supports `--limit`, `--offset`, `--frequency`, `--type`, and `--group-id`.
+- `transactions list` now exposes backend-supported filters for comma-separated
+  account/category IDs, search text, amount ranges, and canonical
+  `--limit`/`--offset` pagination.
+- `transfers list` now supports backend pagination via `--limit` and
+  `--offset` over transfer pairs while preserving both transaction rows.
+- `accounts list --include-archived` now fetches archived accounts explicitly
+  and returns archived account metadata while preserving active-account totals.
+- `exchange-rate convert --amount` now adds a client-side `convertedAmount`
+  using the backend rate.
+
+### Fixed
+
+- API network failures now return structured JSON errors instead of raw Node.js
+  stack traces.
+- `auth login` now reports a friendly connection error when a local or custom
+  API URL is unreachable.
+
+### Security
+
+- Device authorization remains split between visible `userCode` and secret
+  `deviceCode`; production smoke tests verified the visible code cannot poll
+  for a token.
+
 ## [0.6.0] - 2026-05-09
 
 ### Added

@@ -26,16 +26,17 @@ revoke the CLI device token server-side.
 ## Common Commands
 
 ```bash
-lucas accounts list
+lucas accounts list --include-archived
 lucas accounts create --name "Savings" --type SAVINGS --bank BCP --currency PEN
 lucas accounts debt-detail <account-id> --mode current_cycle
 
-lucas transactions list --from 2026-05-01 --to 2026-05-31
+lucas transactions list --from 2026-05-01 --to 2026-05-31 --search rappi --limit 10
 lucas transactions create --account-id <id> --amount 35 --type EXPENSE --description "Lunch"
 
+lucas transfers list --limit 10 --offset 0
 lucas transfers create --from-account-id <id> --to-account-id <id> --amount 500
 
-lucas subscriptions list
+lucas subscriptions list --type SERVICE --limit 20
 lucas subscriptions mark-paid <id>
 
 lucas loans list
@@ -44,6 +45,7 @@ lucas loans mark-paid <id> --verified
 
 lucas stats summary
 lucas stats by-category --year 2026 --month 5
+lucas exchange-rate convert --from USD --to PEN --amount 25
 
 lucas ai usage
 lucas ai parse-expenses "lunch at Pardos S/ 35" --date 2026-05-08 --account-id <id>
@@ -53,6 +55,21 @@ lucas ai insights "How am I doing this month?" --period month --currency PEN
 
 Command groups: `auth`, `accounts`, `transactions`, `transfers`,
 `subscriptions`, `loans`, `stats`, `categories`, `exchange-rate`, and `ai`.
+
+List commands are intentionally agent-friendly:
+
+- `transactions list` supports `--account-id`, `--account-ids`,
+  `--category-id`, `--category-ids`, `--type`, `--search`, `--min-amount`,
+  `--max-amount`, `--from`, `--to`, `--limit`, and `--offset`.
+- `transfers list` supports `--limit` and `--offset` over transfer pairs. Each
+  transfer pair still returns its two transaction rows.
+- `subscriptions list` supports `--limit`, `--offset`, `--frequency`, `--type`,
+  and `--group-id`.
+- `accounts list --include-archived` includes archived accounts in the account
+  array and adds `archivedAccounts` metadata. Balance/debt totals remain the
+  active-account totals returned by LucasApp.
+- `exchange-rate convert --amount <n>` includes a client-side
+  `convertedAmount` derived from the backend rate.
 
 ## JSON Output
 
@@ -83,6 +100,7 @@ Error:
 - Resource IDs are validated before building API paths.
 - Backend error details are summarized by default. Set `LUCAS_DEBUG=1` only
   while debugging locally; sensitive fields are redacted.
+- Network failures return structured JSON instead of raw Node stack traces.
 - `LUCAS_API_URL` is intended for local development and advanced testing. Normal
   users should keep the default production URL.
 - Never commit `.env`, `.npmrc`, credentials, keys, certificates, service

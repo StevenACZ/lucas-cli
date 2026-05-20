@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { withAvailableCredit } from "../../src/commands/accounts/list.js";
+import {
+  getArchivedAccountItems,
+  withArchivedAccounts,
+  withAvailableCredit,
+} from "../../src/commands/accounts/list.js";
 
 describe("accounts list availableCredit", () => {
   it("adds availableCredit for CREDIT accounts with non-null creditLimit", () => {
@@ -24,5 +28,31 @@ describe("accounts list availableCredit", () => {
   it("passes through input when accounts array is missing", () => {
     const input = { totalBalance: 0 };
     expect(withAvailableCredit(input as never)).toBe(input);
+  });
+
+  it("appends archived accounts without changing active totals", () => {
+    const result = withArchivedAccounts(
+      {
+        accounts: [{ id: "active", isArchived: false }],
+        totalBalance: 100,
+      },
+      [{ id: "archived", isArchived: true }],
+    );
+
+    expect(result.accounts.map((account) => account.id)).toEqual([
+      "active",
+      "archived",
+    ]);
+    expect(result.archivedAccountsCount).toBe(1);
+    expect(result.totalBalance).toBe(100);
+  });
+
+  it("normalizes archived account responses from array or wrapper shapes", () => {
+    const archived = [{ id: "archived", isArchived: true }];
+
+    expect(getArchivedAccountItems(archived)).toEqual(archived);
+    expect(getArchivedAccountItems({ accounts: archived })).toEqual(archived);
+    expect(getArchivedAccountItems({ items: archived })).toEqual(archived);
+    expect(getArchivedAccountItems({})).toEqual([]);
   });
 });

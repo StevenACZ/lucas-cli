@@ -14,6 +14,8 @@ safe to publish.
   provenance.
 - Keep `LUCAS_API_URL` as an advanced development override, not normal user
   setup.
+- Match public list commands to the backend response shape, including
+  pagination wrappers such as `{ items, summary, pagination }`.
 - Build API paths with `resourcePath()` when an ID appears in the URL path.
 - Store local credentials under `~/.config/lucas` with private permissions.
 - Reject non-image and sensitive local paths before reading image inputs.
@@ -30,6 +32,10 @@ bun run test
 bun run build
 npm pack --dry-run --json --ignore-scripts
 ```
+
+Before publishing, run read-only smoke tests against the production API using
+the installed CLI or the built `dist/index.js`. Do not create, update, pay, or
+delete real financial records as a smoke test unless explicitly requested.
 
 ## Publishing
 
