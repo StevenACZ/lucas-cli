@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
 import { buildBody } from "../../lib/body-builder.js";
+import { resourcePath } from "../../lib/resource-path.js";
 
 export const updateAccountCommand = new Command("update")
   .description("Update an account")
@@ -53,6 +54,10 @@ export const updateAccountCommand = new Command("update")
       { opt: "excluded", body: "excluded", type: "boolean" },
       { opt: "isArchived", body: "isArchived", type: "boolean" },
     ]);
-    const data = await apiRequest("PUT", `/api/accounts/${id}`, body);
+    const data = await apiRequest(
+      "PUT",
+      resourcePath("/api/accounts", id),
+      body,
+    );
     output.success(data);
   });

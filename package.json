@@ -1,6 +1,6 @@
 {
   "name": "lucasapp-cli",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "LucasApp CLI - Financial data management for AI agents",
   "author": "StevenACZ",
   "license": "MIT",
@@ -10,6 +10,7 @@
   },
   "homepage": "https://lucas.stevenacz.com/cli",
   "type": "module",
+  "packageManager": "bun@1.3.12",
   "bin": {
     "lucas": "dist/index.js"
   },

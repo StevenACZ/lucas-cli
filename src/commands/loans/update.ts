@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
 import { buildBody } from "../../lib/body-builder.js";
+import { resourcePath } from "../../lib/resource-path.js";
 
 export const updateLoanCommand = new Command("update")
   .description("Update a loan")
@@ -74,6 +75,6 @@ export const updateLoanCommand = new Command("update")
       { opt: "lateFeeGraceDays", body: "lateFeeGraceDays", type: "number" },
       { opt: "lateFeeEnabled", body: "lateFeeEnabled", type: "boolean" },
     ]);
-    const data = await apiRequest("PUT", `/api/loans/${id}`, body);
+    const data = await apiRequest("PUT", resourcePath("/api/loans", id), body);
     output.success(data);
   });

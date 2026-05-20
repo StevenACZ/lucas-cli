@@ -28,6 +28,50 @@ async function readErrorPayload(
   }
 }
 
+const SENSITIVE_KEY_PATTERN =
+  /(token|password|secret|authorization|api[-_]?key|cookie|session|credential)/i;
+
+function redactSensitiveFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactSensitiveFields);
+  if (!value || typeof value !== "object") return value;
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+      key,
+      SENSITIVE_KEY_PATTERN.test(key)
+        ? "[REDACTED]"
+        : redactSensitiveFields(entry),
+    ]),
+  );
+}
+
+function buildSafeErrorDetails(
+  payload: ApiErrorPayload | string,
+  statusCode: number,
+): Record<string, unknown> {
+  if (typeof payload === "string") {
+    return { message: payload, statusCode };
+  }
+
+  const code =
+    payload.code ||
+    payload.statusMessage ||
+    payload.error?.code ||
+    payload.error?.statusMessage;
+  const message = payload.message || payload.error?.message;
+  const safeDetails: Record<string, unknown> = {
+    ...(code && { code }),
+    ...(message && { message }),
+    statusCode,
+  };
+
+  if (process.env.LUCAS_DEBUG === "1") {
+    safeDetails.details = redactSensitiveFields(payload);
+  }
+
+  return safeDetails;
+}
+
 export async function apiRequest<T>(
   method: HttpMethod,
   path: string,
@@ -69,7 +113,11 @@ export async function apiRequest<T>(
 
   if (!res.ok) {
     const payload = await readErrorPayload(res);
-    output.error(getApiErrorMessage(payload), res.status, payload);
+    output.error(
+      getApiErrorMessage(payload),
+      res.status,
+      buildSafeErrorDetails(payload, res.status),
+    );
   }
 
   return (await res.json()) as T;

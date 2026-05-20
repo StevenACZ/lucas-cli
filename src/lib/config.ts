@@ -3,6 +3,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
   unlinkSync,
   writeFileSync,
 } from "fs";
@@ -26,13 +27,17 @@ export function getApiUrl(): string {
 
 export function ensureConfigDir(): void {
   if (!existsSync(CONFIG_DIR)) {
-    mkdirSync(CONFIG_DIR, { recursive: true });
+    mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
   }
+  chmodSync(CONFIG_DIR, 0o700);
 }
 
 export function saveCredentials(creds: Credentials): void {
   ensureConfigDir();
-  writeFileSync(CREDENTIALS_FILE, JSON.stringify(creds, null, 2));
+  const tmpFile = `${CREDENTIALS_FILE}.${process.pid}.tmp`;
+  writeFileSync(tmpFile, JSON.stringify(creds, null, 2), { mode: 0o600 });
+  chmodSync(tmpFile, 0o600);
+  renameSync(tmpFile, CREDENTIALS_FILE);
   chmodSync(CREDENTIALS_FILE, 0o600);
 }
 

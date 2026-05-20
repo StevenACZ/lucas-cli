@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const outputError = vi.fn((message: string) => {
   throw new Error(message);
@@ -23,8 +23,19 @@ vi.mock("../../src/lib/output.js", () => ({
 const { apiRequest } = await import("../../src/lib/api-client.js");
 
 describe("apiRequest backend error codes", () => {
+  const originalDebug = process.env.LUCAS_DEBUG;
+
   beforeEach(() => {
     outputError.mockClear();
+    delete process.env.LUCAS_DEBUG;
+  });
+
+  afterEach(() => {
+    if (originalDebug === undefined) {
+      delete process.env.LUCAS_DEBUG;
+    } else {
+      process.env.LUCAS_DEBUG = originalDebug;
+    }
   });
 
   it("maps AI_PLAN_REQUIRED to a CLI-friendly message", async () => {
@@ -36,6 +47,10 @@ describe("apiRequest backend error codes", () => {
         json: async () => ({
           code: "AI_PLAN_REQUIRED",
           message: "raw backend message",
+          details: {
+            token: "secret-token",
+            nested: { password: "super-secret" },
+          },
         }),
       })),
     );
@@ -46,8 +61,49 @@ describe("apiRequest backend error codes", () => {
     expect(outputError).toHaveBeenCalledWith(
       "Free plan includes 0 AI calls. Upgrade to Premium to use AI.",
       403,
-      expect.objectContaining({ code: "AI_PLAN_REQUIRED" }),
+      {
+        code: "AI_PLAN_REQUIRED",
+        message: "raw backend message",
+        statusCode: 403,
+      },
     );
+  });
+
+  it("redacts backend details when LUCAS_DEBUG is enabled", async () => {
+    process.env.LUCAS_DEBUG = "1";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        status: 500,
+        json: async () => ({
+          code: "INTERNAL_ERROR",
+          message: "Backend failed",
+          details: {
+            accessToken: "secret-token",
+            nested: { password: "super-secret", hint: "keep" },
+          },
+        }),
+      })),
+    );
+
+    await expect(apiRequest("GET", "/api/accounts")).rejects.toThrow(
+      "Backend failed",
+    );
+
+    expect(outputError).toHaveBeenCalledWith("Backend failed", 500, {
+      code: "INTERNAL_ERROR",
+      message: "Backend failed",
+      statusCode: 500,
+      details: {
+        code: "INTERNAL_ERROR",
+        message: "Backend failed",
+        details: {
+          accessToken: "[REDACTED]",
+          nested: { password: "[REDACTED]", hint: "keep" },
+        },
+      },
+    });
   });
 
   it.each([

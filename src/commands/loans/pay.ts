@@ -13,6 +13,7 @@ import {
   parseOptionalNumber,
 } from "../../lib/number-parser.js";
 import { output } from "../../lib/output.js";
+import { resourcePath } from "../../lib/resource-path.js";
 
 export interface PayLoanOptions {
   amount: number | string;
@@ -54,15 +55,17 @@ export async function executePayLoan(
   opts: PayLoanOptions,
 ): Promise<PayLoanExecutionResult> {
   const body = buildPayLoanPayload(opts);
+  const loanPath = resourcePath("/api/loans", id);
   const beforeLoan = opts.verified
-    ? await apiRequest<LoanDetailsLike>("GET", `/api/loans/${id}`)
+    ? await apiRequest<LoanDetailsLike>("GET", loanPath)
     : undefined;
-  const payment = await apiRequest("POST", `/api/loans/${id}/pay`, body);
-  if (!beforeLoan) return { payment };
-  const afterLoan = await apiRequest<LoanDetailsLike>(
-    "GET",
-    `/api/loans/${id}`,
+  const payment = await apiRequest(
+    "POST",
+    resourcePath("/api/loans", id, "pay"),
+    body,
   );
+  if (!beforeLoan) return { payment };
+  const afterLoan = await apiRequest<LoanDetailsLike>("GET", loanPath);
   const targetInstallment = findNextPayableInstallment(beforeLoan);
   const expectedLoanReduction =
     typeof body.loanAmount === "number"

@@ -18,18 +18,21 @@ function writeln(text: string): void {
 
 async function pollForApproval(
   apiUrl: string,
-  code: string,
+  deviceCode: string,
   deviceName: string,
+  pollIntervalMs = 3000,
 ): Promise<void> {
   const maxAttempts = 180;
   write("\n  Waiting for authorization ");
 
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((r) => setTimeout(r, 3000));
+    await new Promise((r) => setTimeout(r, pollIntervalMs));
     write(".");
 
     try {
-      const res = await fetch(`${apiUrl}/api/cli/poll/${code}`);
+      const res = await fetch(
+        `${apiUrl}/api/cli/poll/${encodeURIComponent(deviceCode)}`,
+      );
       if (!res.ok) continue;
 
       const data = (await res.json()) as {
@@ -74,40 +77,55 @@ async function pollForApproval(
   process.exit(1);
 }
 
+interface RunLoginOptions {
+  apiUrl?: string;
+  deviceName?: string;
+  pollIntervalMs?: number;
+}
+
+export async function runLogin(opts: RunLoginOptions = {}): Promise<void> {
+  const apiUrl = opts.apiUrl ?? getApiUrl();
+  const deviceName = opts.deviceName ?? `${hostname()} - CLI`;
+
+  const res = await fetch(`${apiUrl}/api/cli/device-auth`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceName }),
+  });
+
+  if (!res.ok) {
+    writeln("  \x1b[31m✗\x1b[0m Failed to connect to LucasApp API");
+    process.exit(1);
+  }
+
+  const { deviceCode, userCode, verifyUrl } = (await res.json()) as {
+    deviceCode: string;
+    userCode?: string;
+    verifyUrl: string;
+  };
+  const displayCode = userCode ?? deviceCode;
+
+  writeln("");
+  writeln("  \x1b[1mLucasApp CLI\x1b[0m — Device Authorization");
+  writeln("");
+  writeln(`  Your code: \x1b[1;36m${displayCode}\x1b[0m`);
+  writeln("");
+  writeln("  \x1b[2mOpening browser...\x1b[0m");
+  writeln(
+    `  \x1b[2mIf it didn't open, visit:\x1b[0m \x1b[4m${verifyUrl}\x1b[0m`,
+  );
+
+  openBrowser(verifyUrl);
+  await pollForApproval(apiUrl, deviceCode, deviceName, opts.pollIntervalMs);
+}
+
 export const loginCommand = new Command("login")
   .description("Authenticate with LucasApp")
   .option("--api-url <url>", "API base URL")
   .option("--device-name <name>", "Device name", `${hostname()} - CLI`)
   .action(async (opts) => {
-    const apiUrl = opts.apiUrl ?? getApiUrl();
-    const deviceName = opts.deviceName as string;
-
-    const res = await fetch(`${apiUrl}/api/cli/device-auth`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ deviceName }),
+    await runLogin({
+      apiUrl: opts.apiUrl,
+      deviceName: opts.deviceName,
     });
-
-    if (!res.ok) {
-      writeln("  \x1b[31m✗\x1b[0m Failed to connect to LucasApp API");
-      process.exit(1);
-    }
-
-    const { deviceCode, verifyUrl } = (await res.json()) as {
-      deviceCode: string;
-      verifyUrl: string;
-    };
-
-    writeln("");
-    writeln("  \x1b[1mLucasApp CLI\x1b[0m — Device Authorization");
-    writeln("");
-    writeln(`  Your code: \x1b[1;36m${deviceCode}\x1b[0m`);
-    writeln("");
-    writeln("  \x1b[2mOpening browser...\x1b[0m");
-    writeln(
-      `  \x1b[2mIf it didn't open, visit:\x1b[0m \x1b[4m${verifyUrl}\x1b[0m`,
-    );
-
-    openBrowser(verifyUrl);
-    await pollForApproval(apiUrl, deviceCode, deviceName);
   });

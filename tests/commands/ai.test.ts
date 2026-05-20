@@ -110,7 +110,8 @@ describe("ai commands", () => {
   it("posts image expense parsing requests with optional account context", async () => {
     tempDir = await mkdtemp(join(tmpdir(), "lucas-cli-ai-"));
     const imagePath = join(tempDir, "receipt.jpg");
-    await writeFile(imagePath, "fake-image");
+    const jpegBytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
+    await writeFile(imagePath, jpegBytes);
     apiRequest.mockResolvedValue({ success: true, transactions: [] });
 
     await runParseExpensesImage([imagePath], {
@@ -124,7 +125,7 @@ describe("ai commands", () => {
       {
         images: [
           {
-            base64: Buffer.from("fake-image").toString("base64"),
+            base64: jpegBytes.toString("base64"),
             mimeType: "image/jpeg",
           },
         ],
@@ -132,6 +133,18 @@ describe("ai commands", () => {
         accountId: "account-1",
       },
     );
+  });
+
+  it("rejects non-image files before sending them to the backend", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "lucas-cli-ai-"));
+    const credentialsPath = join(tempDir, "credentials.json");
+    await writeFile(credentialsPath, JSON.stringify({ token: "secret" }));
+
+    await expect(runParseExpensesImage([credentialsPath], {})).rejects.toThrow(
+      "Refusing to read sensitive file",
+    );
+
+    expect(apiRequest).not.toHaveBeenCalled();
   });
 
   it("posts insights requests", async () => {

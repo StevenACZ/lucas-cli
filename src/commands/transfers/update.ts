@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
 import { buildBody } from "../../lib/body-builder.js";
+import { resourcePath } from "../../lib/resource-path.js";
 
 export const updateTransferCommand = new Command("update")
   .description("Update a transfer")
@@ -39,6 +40,10 @@ export const updateTransferCommand = new Command("update")
         clearOpt: "clearExchangeRate",
       },
     ]);
-    const data = await apiRequest("PUT", `/api/transfers/${id}`, body);
+    const data = await apiRequest(
+      "PUT",
+      resourcePath("/api/transfers", id),
+      body,
+    );
     output.success(data);
   });

@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
+import { resourcePath } from "../../lib/resource-path.js";
 
 interface LoanPayment {
   id: string;
@@ -27,7 +28,10 @@ export const unmarkPaidLoanCommand = new Command("unmark-paid")
     let paymentId = opts.paymentId;
 
     if (!paymentId) {
-      const loan = await apiRequest<LoanDetails>("GET", `/api/loans/${id}`);
+      const loan = await apiRequest<LoanDetails>(
+        "GET",
+        resourcePath("/api/loans", id),
+      );
       if (!loan.payments || loan.payments.length === 0) {
         output.error("No payments found for this loan", 404, { loanId: id });
       }
@@ -37,8 +41,10 @@ export const unmarkPaidLoanCommand = new Command("unmark-paid")
       paymentId = sorted[0].id;
     }
 
-    const data = await apiRequest("POST", `/api/loans/${id}/reverse-payment`, {
-      paymentId,
-    });
+    const data = await apiRequest(
+      "POST",
+      resourcePath("/api/loans", id, "reverse-payment"),
+      { paymentId },
+    );
     output.success(data);
   });

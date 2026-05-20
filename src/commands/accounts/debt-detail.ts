@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
+import { resourcePath } from "../../lib/resource-path.js";
 
 export interface DebtDetailOptions {
   mode?: string;
@@ -33,7 +34,7 @@ export async function runDebtDetail(id: string, opts: DebtDetailOptions) {
   const params = buildDebtDetailParams(opts);
   const data = await apiRequest(
     "GET",
-    `/api/accounts/${id}/credit-debt-breakdown`,
+    resourcePath("/api/accounts", id, "credit-debt-breakdown"),
     undefined,
     params,
   );
@@ -41,9 +42,7 @@ export async function runDebtDetail(id: string, opts: DebtDetailOptions) {
 }
 
 export const debtDetailCommand = new Command("debt-detail")
-  .description(
-    "Get credit card debt breakdown for a billing cycle (AI-friendly pass-through of /api/accounts/:id/credit-debt-breakdown)",
-  )
+  .description("Get credit card debt breakdown for a billing cycle")
   .argument("<id>", "Credit account ID")
   .option(
     "--mode <mode>",
@@ -65,8 +64,7 @@ Notes:
     marked partially paid (the model does not allocate payments to specific charges).
   - Modes current_cycle and last_statement require the account to have
     a statementClosingDay set. Without one, use --mode custom.
-  - Archived accounts: behavior is the same as the underlying endpoint
-    (no extra filtering added by the CLI).
+  - Archived accounts are handled the same way as the LucasApp account view.
 
 Examples:
   lucas accounts debt-detail acc_123

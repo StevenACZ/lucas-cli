@@ -11,6 +11,7 @@ import {
   type PayLoanOptions,
 } from "./pay.js";
 import { apiRequest } from "../../lib/api-client.js";
+import { resourcePath } from "../../lib/resource-path.js";
 
 export interface MarkPaidLoanOptions {
   currency?: string;
@@ -24,7 +25,10 @@ export async function executeMarkPaidLoan(
   id: string,
   opts: MarkPaidLoanOptions,
 ): Promise<PayLoanExecutionResult & Record<string, unknown>> {
-  const loan = await apiRequest<LoanDetailsLike>("GET", `/api/loans/${id}`);
+  const loan = await apiRequest<LoanDetailsLike>(
+    "GET",
+    resourcePath("/api/loans", id),
+  );
   const installment = findNextPayableInstallment(loan);
   if (!installment) {
     output.error("No pending installment found for this loan", 400, {
