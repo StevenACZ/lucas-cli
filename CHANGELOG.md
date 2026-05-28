@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.7] - 2026-05-28
+
 ### Added
 
 - Added `lucas investments` commands for instrument discovery, portfolio
@@ -25,6 +27,12 @@ All notable changes to this project will be documented in this file.
 - `accounts update` now supports `--currency` to match backend account currency
   edits.
 - `subscriptions create` and `subscriptions update` now support `--group-id`.
+
+### Fixed
+
+- Existing credentials that still reference the legacy production API now
+  resolve to `https://api.lucasapp.app`, and `LUCAS_API_URL` can override stored
+  credential URLs for local testing.
 
 ## [0.6.6] - 2026-05-20
 
