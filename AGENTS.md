@@ -22,6 +22,7 @@ safe to publish.
   owns Premium gating, billing dates, group ownership, and reorder semantics.
 - Keep subscription charge commands as thin API clients; backend owns charge
   generation, transaction side effects, confirmation, and SSE semantics.
+- Keep plan copy synced to backend limits; CLI does not implement billing.
 - Match public list commands to the backend response shape, including
   pagination wrappers such as `{ items, summary, pagination }`.
 - Build API paths with `resourcePath()` when an ID appears in the URL path.

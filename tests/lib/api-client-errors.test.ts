@@ -56,10 +56,10 @@ describe("apiRequest backend error codes", () => {
     );
 
     await expect(apiRequest("GET", "/api/ai/usage")).rejects.toThrow(
-      "Free plan includes 0 AI calls. Upgrade to Premium to use AI.",
+      "Free plan includes 40 AI actions per month. Upgrade to Premium for 400 per month.",
     );
     expect(outputError).toHaveBeenCalledWith(
-      "Free plan includes 0 AI calls. Upgrade to Premium to use AI.",
+      "Free plan includes 40 AI actions per month. Upgrade to Premium for 400 per month.",
       403,
       {
         code: "AI_PLAN_REQUIRED",

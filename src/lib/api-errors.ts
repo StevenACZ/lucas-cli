@@ -18,7 +18,7 @@ export interface ApiErrorPayload {
 
 const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   AI_PLAN_REQUIRED:
-    "Free plan includes 0 AI calls. Upgrade to Premium to use AI.",
+    "Free plan includes 40 AI actions per month. Upgrade to Premium for 400 per month.",
   AI_LIMIT_REACHED:
     "Premium AI limit reached. Try again after your quota resets.",
   SUBSCRIPTION_REQUIRED: "Subscriptions require Premium.",

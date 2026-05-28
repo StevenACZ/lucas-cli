@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Updated plan copy to the official Free and Premium limits: Free includes 40 AI
+  actions per month and up to 3 active accounts; Premium uses 80/day, 250/week,
+  and 400/month with monthly and annual App Store billing handled outside the
+  CLI.
+
 ## [0.6.8] - 2026-05-28
 
 ### Changed
@@ -92,7 +99,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Public plan copy now exposes only `FREE` and `PREMIUM`; Premium is `$4/month` with unlimited accounts, unlimited subscriptions, and AI limits of 50/day, 300/week, and 1000/month.
+- Public plan copy now exposes only `FREE` and `PREMIUM`.
 - Receipt image parsing now documents and enforces a maximum of 10 images per request.
 - Backend limit errors (`AI_PLAN_REQUIRED`, `AI_LIMIT_REACHED`, `SUBSCRIPTION_REQUIRED`, `ACCOUNT_LIMIT_EXCEEDED`) now map to CLI-friendly messages.
 

@@ -10,11 +10,15 @@ export const AI_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 const AI_IMAGE_TOTAL_MAX_BYTES = 25 * 1024 * 1024;
 
 export const PLAN_FEATURES: Record<UserPlan, string[]> = {
-  FREE: ["0 AI calls", "Max 3 active accounts", "Subscriptions blocked"],
+  FREE: [
+    "40 AI actions/month",
+    "Max 3 active accounts",
+    "Subscriptions and investments blocked",
+  ],
   PREMIUM: [
     "Unlimited accounts",
-    "Unlimited subscriptions",
-    "AI limits: 50/day, 300/week, 1000/month",
+    "Subscriptions and investments",
+    "AI limits: 80/day, 250/week, 400/month",
   ],
 };
 

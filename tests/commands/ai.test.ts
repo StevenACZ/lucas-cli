@@ -59,13 +59,15 @@ describe("ai commands", () => {
 
   it("exposes only FREE and PREMIUM plan copy", () => {
     expect(USER_PLANS).toEqual(["FREE", "PREMIUM"]);
-    expect(PLAN_FEATURES.FREE).toContain("0 AI calls");
+    expect(PLAN_FEATURES.FREE).toContain("40 AI actions/month");
     expect(PLAN_FEATURES.FREE).toContain("Max 3 active accounts");
-    expect(PLAN_FEATURES.FREE).toContain("Subscriptions blocked");
+    expect(PLAN_FEATURES.FREE).toContain(
+      "Subscriptions and investments blocked",
+    );
     expect(PLAN_FEATURES.PREMIUM).toContain("Unlimited accounts");
-    expect(PLAN_FEATURES.PREMIUM).toContain("Unlimited subscriptions");
+    expect(PLAN_FEATURES.PREMIUM).toContain("Subscriptions and investments");
     expect(PLAN_FEATURES.PREMIUM).toContain(
-      "AI limits: 50/day, 300/week, 1000/month",
+      "AI limits: 80/day, 250/week, 400/month",
     );
   });
 
