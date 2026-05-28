@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git+https://github.com/StevenACZ/lucas-cli.git"
   },
-  "homepage": "https://lucas.stevenacz.com/cli",
+  "homepage": "https://dashboard.lucasapp.app/cli",
   "type": "module",
   "packageManager": "bun@1.3.12",
   "bin": {

@@ -103,6 +103,7 @@ Error:
 - Backend error details are summarized by default. Set `LUCAS_DEBUG=1` only
   while debugging locally; sensitive fields are redacted.
 - Network failures return structured JSON instead of raw Node stack traces.
+- The default production API is `https://api.lucasapp.app`.
 - `LUCAS_API_URL` is intended for local development and advanced testing. Normal
   users should keep the default production URL.
 - Never commit `.env`, `.npmrc`, credentials, keys, certificates, service

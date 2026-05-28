@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- Changed the default production API URL to `https://api.lucasapp.app` and the
+  CLI landing/approval URL to `https://dashboard.lucasapp.app/cli`.
+
 ## [0.6.6] - 2026-05-20
 
 ### Removed

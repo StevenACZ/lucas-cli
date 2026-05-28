@@ -7,7 +7,7 @@ const stderrWrite = vi
   .mockImplementation(() => true);
 
 vi.mock("../../src/lib/config.js", () => ({
-  getApiUrl: () => "https://lucas.stevenacz.com",
+  getApiUrl: () => "https://api.lucasapp.app",
   saveCredentials,
 }));
 
@@ -31,7 +31,8 @@ describe("auth login", () => {
         json: async () => ({
           deviceCode: "secret-poll-code",
           userCode: "ABCD-2345",
-          verifyUrl: "https://lucas.stevenacz.com/cli/authorize?code=ABCD-2345",
+          verifyUrl:
+            "https://dashboard.lucasapp.app/cli/authorize?code=ABCD-2345",
         }),
       })
       .mockResolvedValueOnce({
@@ -45,14 +46,14 @@ describe("auth login", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await runLogin({
-      apiUrl: "https://lucas.stevenacz.com",
+      apiUrl: "https://api.lucasapp.app",
       deviceName: "Mac CLI",
       pollIntervalMs: 1,
     });
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      "https://lucas.stevenacz.com/api/cli/poll/secret-poll-code",
+      "https://api.lucasapp.app/api/cli/poll/secret-poll-code",
     );
     const stderr = stderrWrite.mock.calls.map((call) => call[0]).join("");
     expect(stderr).toContain("ABCD-2345");
@@ -83,7 +84,7 @@ describe("auth login", () => {
 
     const stderr = stderrWrite.mock.calls.map((call) => call[0]).join("");
     expect(stderr).toContain(
-      "Cannot reach LucasApp API at http://localhost:3000. Check your connection or use --api-url https://lucas.stevenacz.com",
+      "Cannot reach LucasApp API at http://localhost:3000. Check your connection or use --api-url https://api.lucasapp.app",
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
     exitSpy.mockRestore();

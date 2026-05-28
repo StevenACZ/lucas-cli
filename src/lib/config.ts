@@ -19,7 +19,7 @@ export interface Credentials {
 
 export const CONFIG_DIR = join(homedir(), ".config", "lucas");
 const CREDENTIALS_FILE = join(CONFIG_DIR, "credentials.json");
-const DEFAULT_API_URL = "https://lucas.stevenacz.com";
+const DEFAULT_API_URL = "https://api.lucasapp.app";
 
 export function getApiUrl(): string {
   return process.env.LUCAS_API_URL ?? DEFAULT_API_URL;

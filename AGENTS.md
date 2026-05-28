@@ -14,6 +14,8 @@ safe to publish.
   provenance.
 - Keep `LUCAS_API_URL` as an advanced development override, not normal user
   setup.
+- Default production API is `https://api.lucasapp.app`; browser approval lives
+  on `https://dashboard.lucasapp.app/cli`.
 - Match public list commands to the backend response shape, including
   pagination wrappers such as `{ items, summary, pagination }`.
 - Build API paths with `resourcePath()` when an ID appears in the URL path.

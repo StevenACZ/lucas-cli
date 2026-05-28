@@ -18,7 +18,7 @@ function writeln(text: string): void {
 
 function failApiConnection(apiUrl: string): never {
   writeln(
-    `  \x1b[31m✗\x1b[0m Cannot reach LucasApp API at ${apiUrl}. Check your connection or use --api-url https://lucas.stevenacz.com`,
+    `  \x1b[31m✗\x1b[0m Cannot reach LucasApp API at ${apiUrl}. Check your connection or use --api-url https://api.lucasapp.app`,
   );
   process.exit(1);
 }
