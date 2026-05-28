@@ -16,6 +16,12 @@ safe to publish.
   setup.
 - Default production API is `https://api.lucasapp.app`; browser approval lives
   on `https://dashboard.lucasapp.app/cli`.
+- Keep `investments` commands as thin API clients; backend owns quotes,
+  catalog search, Premium gating, cash validation, and archive semantics.
+- Keep subscription calendar and group commands as thin API clients; backend
+  owns Premium gating, billing dates, group ownership, and reorder semantics.
+- Keep subscription charge commands as thin API clients; backend owns charge
+  generation, transaction side effects, confirmation, and SSE semantics.
 - Match public list commands to the backend response shape, including
   pagination wrappers such as `{ items, summary, pagination }`.
 - Build API paths with `resourcePath()` when an ID appears in the URL path.

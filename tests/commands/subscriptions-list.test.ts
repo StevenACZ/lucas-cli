@@ -3,6 +3,7 @@ import {
   buildSubscriptionListParams,
   getSubscriptionItems,
 } from "../../src/commands/subscriptions/list.js";
+import { buildSubscriptionCalendarParams } from "../../src/commands/subscriptions/calendar.js";
 
 describe("subscriptions list", () => {
   it("accepts legacy array responses", () => {
@@ -37,6 +38,22 @@ describe("subscriptions list", () => {
       offset: "10",
       frequency: "MONTHLY",
       type: "SERVICE",
+      groupId: "group-1",
+    });
+  });
+
+  it("builds monthly calendar filters", () => {
+    expect(
+      buildSubscriptionCalendarParams({
+        month: "2026-05",
+        frequency: "MONTHLY",
+        type: "SUBSCRIPTION",
+        groupId: "group-1",
+      }),
+    ).toEqual({
+      month: "2026-05",
+      frequency: "MONTHLY",
+      type: "SUBSCRIPTION",
       groupId: "group-1",
     });
   });
