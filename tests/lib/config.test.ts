@@ -5,8 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("config credential storage", () => {
   let tempHome: string | undefined;
+  const originalLucasApiUrl = process.env.LUCAS_API_URL;
 
   beforeEach(async () => {
+    delete process.env.LUCAS_API_URL;
     tempHome = await mkdtemp(join(tmpdir(), "lucas-cli-home-"));
     vi.resetModules();
     vi.doMock("os", () => ({
@@ -17,6 +19,11 @@ describe("config credential storage", () => {
   afterEach(async () => {
     vi.doUnmock("os");
     vi.resetModules();
+    if (originalLucasApiUrl === undefined) {
+      delete process.env.LUCAS_API_URL;
+    } else {
+      process.env.LUCAS_API_URL = originalLucasApiUrl;
+    }
     if (tempHome) {
       await rm(tempHome, { recursive: true, force: true });
       tempHome = undefined;
@@ -40,5 +47,25 @@ describe("config credential storage", () => {
 
     expect(dirMode).toBe(0o700);
     expect(fileMode).toBe(0o600);
+  });
+
+  it("normalizes legacy production API URLs from stored credentials", async () => {
+    const { getApiUrl } = await import("../../src/lib/config.js");
+
+    expect(getApiUrl({ apiUrl: "https://lucas.stevenacz.com" })).toBe(
+      "https://api.lucasapp.app",
+    );
+    expect(getApiUrl({ apiUrl: "https://lucas.stevenacz.com/" })).toBe(
+      "https://api.lucasapp.app",
+    );
+  });
+
+  it("lets LUCAS_API_URL override stored credentials", async () => {
+    process.env.LUCAS_API_URL = "http://localhost:3301";
+    const { getApiUrl } = await import("../../src/lib/config.js");
+
+    expect(getApiUrl({ apiUrl: "https://example.test" })).toBe(
+      "http://localhost:3301",
+    );
   });
 });
