@@ -27,7 +27,6 @@ const { runParseExpenses } =
   await import("../../src/commands/ai/parse-expenses.js");
 const { runParseExpensesImage } =
   await import("../../src/commands/ai/parse-expenses-image.js");
-const { runInsights } = await import("../../src/commands/ai/insights.js");
 
 async function listFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -159,26 +158,18 @@ describe("ai commands", () => {
     expect(apiRequest).not.toHaveBeenCalled();
   });
 
-  it("posts insights requests", async () => {
-    apiRequest.mockResolvedValue({ success: true, data: {} });
-
-    await runInsights("How am I doing?", { period: "month", currency: "PEN" });
-
-    expect(apiRequest).toHaveBeenCalledWith("POST", "/api/ai/insights", {
-      query: "How am I doing?",
-      period: "month",
-      currency: "PEN",
-    });
-  });
-
-  it("does not ship the retired Lucas Chat command or endpoint", async () => {
+  it("does not ship retired chat or insights commands/endpoints", async () => {
     const sourceFiles = await listFiles(join(process.cwd(), "src"));
     const matches: string[] = [];
 
     for (const file of sourceFiles) {
       if (!file.endsWith(".ts")) continue;
       const text = await readFile(file, "utf8");
-      if (/chat-message|lucas-chat|Lucas Chat/i.test(text)) {
+      if (
+        /chat-message|lucas-chat|Lucas Chat|ai\/insights|runInsights/i.test(
+          text,
+        )
+      ) {
         matches.push(relative(process.cwd(), file));
       }
     }

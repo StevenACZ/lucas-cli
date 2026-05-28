@@ -59,15 +59,14 @@ lucas exchange-rate convert --from USD --to PEN --amount 25
 lucas ai usage
 lucas ai parse-expenses "lunch at Pardos S/ 35" --date 2026-05-08 --account-id <id>
 lucas ai parse-expenses-image receipt.jpg --date 2026-05-08 --account-id <id>
-lucas ai insights "How am I doing this month?" --period month --currency PEN
 ```
 
 Command groups: `auth`, `accounts`, `transactions`, `transfers`,
 `investments`, `subscriptions`, `subscription-groups`,
 `subscription-charges`, `loans`, `stats`, `categories`, `exchange-rate`, and
 `ai`.
-The `ai` group is intentionally limited to usage, text/image expense parsing,
-and read-only insights.
+The `ai` group is intentionally limited to usage and text/image expense
+parsing.
 
 List commands are intentionally agent-friendly:
 

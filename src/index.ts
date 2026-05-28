@@ -64,7 +64,6 @@ import { convertCommand } from "./commands/exchange-rate/convert.js";
 import { aiUsageCommand } from "./commands/ai/usage.js";
 import { parseExpensesCommand } from "./commands/ai/parse-expenses.js";
 import { parseExpensesImageCommand } from "./commands/ai/parse-expenses-image.js";
-import { aiInsightsCommand } from "./commands/ai/insights.js";
 
 const program = new Command();
 
@@ -152,7 +151,6 @@ const ai = program.command("ai").description("LucasApp AI tools");
 ai.addCommand(aiUsageCommand);
 ai.addCommand(parseExpensesCommand);
 ai.addCommand(parseExpensesImageCommand);
-ai.addCommand(aiInsightsCommand);
 
 await maybeNotifyForUpdate(CLI_VERSION);
 await program.parseAsync(process.argv);
