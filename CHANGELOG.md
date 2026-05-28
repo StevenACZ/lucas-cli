@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.8] - 2026-05-28
+
+### Changed
+
+- Removed the final legacy LucasApp production API URL alias from CLI config
+  resolution. Stored credentials should point directly to
+  `https://api.lucasapp.app`.
+
 ## [0.6.7] - 2026-05-28
 
 ### Added

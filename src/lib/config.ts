@@ -20,14 +20,9 @@ export interface Credentials {
 export const CONFIG_DIR = join(homedir(), ".config", "lucas");
 const CREDENTIALS_FILE = join(CONFIG_DIR, "credentials.json");
 const DEFAULT_API_URL = "https://api.lucasapp.app";
-const LEGACY_PRODUCTION_API_URLS = new Set(["https://lucas.stevenacz.com"]);
 
 export function normalizeApiUrl(apiUrl: string): string {
-  const normalized = apiUrl.trim().replace(/\/+$/, "");
-  if (LEGACY_PRODUCTION_API_URLS.has(normalized)) {
-    return DEFAULT_API_URL;
-  }
-  return normalized;
+  return apiUrl.trim().replace(/\/+$/, "");
 }
 
 export function getApiUrl(creds?: Pick<Credentials, "apiUrl"> | null): string {
