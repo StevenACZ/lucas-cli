@@ -10,6 +10,12 @@ All notable changes to this project will be documented in this file.
   actions per month and up to 3 active accounts; Premium uses 80/day, 250/week,
   and 400/month with monthly and annual App Store billing handled outside the
   CLI.
+- Kept public docs compact and clarified that local smoke notes belong outside
+  versioned package docs.
+
+### Removed
+
+- Removed the old local debt-detail smoke checklist from the workspace.
 
 ## [0.6.8] - 2026-05-28
 

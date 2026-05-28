@@ -28,6 +28,8 @@ safe to publish.
 - Build API paths with `resourcePath()` when an ID appears in the URL path.
 - Store local credentials under `~/.config/lucas` with private permissions.
 - Reject non-image and sensitive local paths before reading image inputs.
+- Keep repo docs public-safe; `docs/` is ignored for local smoke notes unless a
+  file is intentionally versioned.
 
 ## Verification
 
