@@ -87,7 +87,7 @@ export async function apiRequest<T>(
     output.error("Token expired. Run: lucas auth login");
   }
 
-  const apiUrl = creds!.apiUrl ?? getApiUrl();
+  const apiUrl = getApiUrl(creds);
   const url = new URL(path, apiUrl);
 
   if (queryParams) {

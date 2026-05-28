@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { loadCredentials } from "../../lib/config.js";
+import { getApiUrl, loadCredentials } from "../../lib/config.js";
 import { output } from "../../lib/output.js";
 
 export const statusCommand = new Command("status")
@@ -11,7 +11,7 @@ export const statusCommand = new Command("status")
     }
     output.success({
       authenticated: true,
-      apiUrl: creds!.apiUrl,
+      apiUrl: getApiUrl(creds),
       deviceName: creds!.deviceName,
       expiresAt: creds!.expiresAt,
     });
