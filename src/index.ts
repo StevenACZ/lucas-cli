@@ -27,12 +27,18 @@ import { createTransferCommand } from "./commands/transfers/create.js";
 import { updateTransferCommand } from "./commands/transfers/update.js";
 import { deleteTransferCommand } from "./commands/transfers/delete.js";
 
+// Investments
+import { investmentsCommand } from "./commands/investments/index.js";
+
 // Subscriptions
 import { listSubscriptionsCommand } from "./commands/subscriptions/list.js";
 import { createSubscriptionCommand } from "./commands/subscriptions/create.js";
 import { updateSubscriptionCommand } from "./commands/subscriptions/update.js";
 import { deleteSubscriptionCommand } from "./commands/subscriptions/delete.js";
 import { markPaidCommand } from "./commands/subscriptions/mark-paid.js";
+import { subscriptionCalendarCommand } from "./commands/subscriptions/calendar.js";
+import { subscriptionChargesCommand } from "./commands/subscription-charges/index.js";
+import { subscriptionGroupsCommand } from "./commands/subscription-groups/index.js";
 
 // Loans
 import { listLoansCommand } from "./commands/loans/list.js";
@@ -99,6 +105,8 @@ transfers.addCommand(createTransferCommand);
 transfers.addCommand(updateTransferCommand);
 transfers.addCommand(deleteTransferCommand);
 
+program.addCommand(investmentsCommand);
+
 // Grupo: subscriptions
 const subscriptions = program
   .command("subscriptions")
@@ -108,6 +116,10 @@ subscriptions.addCommand(createSubscriptionCommand);
 subscriptions.addCommand(updateSubscriptionCommand);
 subscriptions.addCommand(deleteSubscriptionCommand);
 subscriptions.addCommand(markPaidCommand);
+subscriptions.addCommand(subscriptionCalendarCommand);
+
+program.addCommand(subscriptionGroupsCommand);
+program.addCommand(subscriptionChargesCommand);
 
 // Grupo: loans
 const loans = program.command("loans").description("Manage loans");

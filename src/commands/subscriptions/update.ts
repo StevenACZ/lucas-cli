@@ -23,6 +23,8 @@ export const updateSubscriptionCommand = new Command("update")
   .option("--clear-color", "Clear color")
   .option("--category-id <id>", "Category ID")
   .option("--clear-category-id", "Clear category ID")
+  .option("--group-id <id>", "Subscription group ID")
+  .option("--clear-group-id", "Clear subscription group")
   .option("--type <type>", "Type")
   .option("--start-date <date>", "Start date (YYYY-MM-DD)")
   .option("--clear-start-date", "Clear start date")
@@ -51,6 +53,7 @@ export const updateSubscriptionCommand = new Command("update")
       { opt: "icon", body: "icon", clearOpt: "clearIcon" },
       { opt: "color", body: "color", clearOpt: "clearColor" },
       { opt: "categoryId", body: "categoryId", clearOpt: "clearCategoryId" },
+      { opt: "groupId", body: "groupId", clearOpt: "clearGroupId" },
       { opt: "type", body: "type" },
       { opt: "startDate", body: "startDate", clearOpt: "clearStartDate" },
       { opt: "autoRecord", body: "autoRecord", type: "boolean" },

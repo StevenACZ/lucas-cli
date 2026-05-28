@@ -15,6 +15,7 @@ export const createSubscriptionCommand = new Command("create")
   .option("--icon <icon>", "Icon")
   .option("--color <color>", "Color")
   .option("--category-id <id>", "Category ID")
+  .option("--group-id <id>", "Subscription group ID")
   .option("--type <type>", "Type")
   .option("--auto-record", "Enable auto-record")
   .option("--start-date <date>", "Start date (YYYY-MM-DD)")
@@ -31,6 +32,7 @@ export const createSubscriptionCommand = new Command("create")
       { opt: "icon", body: "icon" },
       { opt: "color", body: "color" },
       { opt: "categoryId", body: "categoryId" },
+      { opt: "groupId", body: "groupId" },
       { opt: "type", body: "type" },
       { opt: "autoRecord", body: "autoRecord", type: "boolean" },
       { opt: "startDate", body: "startDate" },

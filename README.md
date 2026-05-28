@@ -37,7 +37,16 @@ lucas transfers list --limit 10 --offset 0
 lucas transfers create --from-account-id <id> --to-account-id <id> --amount 500
 
 lucas subscriptions list --type SERVICE --limit 20
+lucas subscriptions calendar --month 2026-05 --type SUBSCRIPTION --frequency MONTHLY
 lucas subscriptions mark-paid <id>
+lucas subscription-groups list
+lucas subscription-charges pending --limit 10
+lucas subscription-charges pay <charge-id>
+
+lucas investments instruments --rank popular --limit 20
+lucas investments refresh --action eod
+lucas investments trade <account-id> --instrument-id <id> --side BUY --quantity 1 --price 100
+lucas investments history <account-id> --range 90d
 
 lucas loans list
 lucas loans pay <id> --amount 750 --verified
@@ -54,7 +63,9 @@ lucas ai insights "How am I doing this month?" --period month --currency PEN
 ```
 
 Command groups: `auth`, `accounts`, `transactions`, `transfers`,
-`subscriptions`, `loans`, `stats`, `categories`, `exchange-rate`, and `ai`.
+`investments`, `subscriptions`, `subscription-groups`,
+`subscription-charges`, `loans`, `stats`, `categories`, `exchange-rate`, and
+`ai`.
 The `ai` group is intentionally limited to usage, text/image expense parsing,
 and read-only insights.
 
@@ -67,6 +78,13 @@ List commands are intentionally agent-friendly:
   transfer pair still returns its two transaction rows.
 - `subscriptions list` supports `--limit`, `--offset`, `--frequency`, `--type`,
   and `--group-id`.
+- `subscriptions calendar` mirrors the backend monthly billing calendar, and
+  `subscription-groups` exposes group list/create/update/delete/reorder.
+- `subscription-charges` exposes generated charges, pending-charge pagination,
+  account-scoped charges, and pay/confirm/manual-paid actions.
+- `investments` mirrors the Premium backend contract for instrument discovery,
+  portfolio overview, positions, activity, history, trades, cash adjustments,
+  backend refresh jobs, and archived investment recovery.
 - `accounts list --include-archived` includes archived accounts in the account
   array and adds `archivedAccounts` metadata. Balance/debt totals remain the
   active-account totals returned by LucasApp.

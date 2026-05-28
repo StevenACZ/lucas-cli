@@ -8,6 +8,8 @@ vi.mock("../../src/lib/api-client.js", () => ({
 
 const { buildCreateAccountBody } =
   await import("../../src/commands/accounts/create.js");
+const { updateAccountCommand } =
+  await import("../../src/commands/accounts/update.js");
 
 describe("accounts create", () => {
   beforeEach(() => {
@@ -69,5 +71,13 @@ describe("accounts create", () => {
         statementClosingDay: "32",
       }),
     ).toThrow();
+  });
+
+  it("account update exposes backend currency edits", () => {
+    const currencyOption = updateAccountCommand.options.find(
+      (option) => option.long === "--currency",
+    );
+
+    expect(currencyOption?.description).toBe("Currency code");
   });
 });

@@ -9,6 +9,7 @@ export const updateAccountCommand = new Command("update")
   .argument("<id>", "Account ID")
   .option("--name <name>", "Account name")
   .option("--bank <bank>", "Bank name")
+  .option("--currency <currency>", "Currency code")
   .option("--color <color>", "Account color")
   .option("--clear-color", "Clear account color")
   .option("--icon <icon>", "Account icon")
@@ -29,6 +30,7 @@ export const updateAccountCommand = new Command("update")
     const body = buildBody(opts, [
       { opt: "name", body: "name" },
       { opt: "bank", body: "bank" },
+      { opt: "currency", body: "currency" },
       { opt: "color", body: "color", clearOpt: "clearColor" },
       { opt: "icon", body: "icon", clearOpt: "clearIcon" },
       { opt: "balance", body: "balance", type: "number" },

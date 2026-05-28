@@ -4,10 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added `lucas investments` commands for instrument discovery, portfolio
+  overview, positions, activity, trades, cash adjustments, and archived
+  investment recovery.
+- Added investment history and permanent archive cleanup commands.
+- Added `lucas investments refresh` for backend catalog/EOD/snapshot refresh
+  jobs.
+- Added `lucas subscriptions calendar` for the backend monthly billing
+  calendar.
+- Added `lucas subscription-groups` list/create/update/delete/reorder commands.
+- Added `lucas subscription-charges` commands for pending charges, account
+  charges, pay, confirm, and manual paid actions.
+
 ### Changed
 
 - Changed the default production API URL to `https://api.lucasapp.app` and the
   CLI landing/approval URL to `https://dashboard.lucasapp.app/cli`.
+- `accounts update` now supports `--currency` to match backend account currency
+  edits.
+- `subscriptions create` and `subscriptions update` now support `--group-id`.
 
 ## [0.6.6] - 2026-05-20
 
