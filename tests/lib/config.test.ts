@@ -49,13 +49,10 @@ describe("config credential storage", () => {
     expect(fileMode).toBe(0o600);
   });
 
-  it("normalizes legacy production API URLs from stored credentials", async () => {
+  it("normalizes stored credential API URLs", async () => {
     const { getApiUrl } = await import("../../src/lib/config.js");
 
-    expect(getApiUrl({ apiUrl: "https://lucas.stevenacz.com" })).toBe(
-      "https://api.lucasapp.app",
-    );
-    expect(getApiUrl({ apiUrl: "https://lucas.stevenacz.com/" })).toBe(
+    expect(getApiUrl({ apiUrl: " https://api.lucasapp.app/ " })).toBe(
       "https://api.lucasapp.app",
     );
   });
