@@ -48,3 +48,10 @@ dev-fixtures/
 
 # Private docs (kept local, not shipped in the public repo or on npm)
 docs/
+DEV_ACCOUNTS.local.json
+selfIdentity.plist
+*.local.json
+*.jks
+*.p8
+google-services.json
+GoogleService-Info.plist
