@@ -47,6 +47,17 @@ describe("accounts create", () => {
     expect(body).not.toHaveProperty("statementClosingDay");
   });
 
+  it("buildCreateAccountBody rejects INVESTMENT while the feature is hidden", () => {
+    expect(() =>
+      buildCreateAccountBody({
+        name: "Broker",
+        type: "INVESTMENT",
+        bank: "IBKR",
+        currency: "USD",
+      }),
+    ).toThrow("Investment accounts are not available yet.");
+  });
+
   it("buildCreateAccountBody rejects non-integer statementClosingDay", () => {
     expect(() =>
       buildCreateAccountBody({

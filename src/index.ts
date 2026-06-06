@@ -27,9 +27,6 @@ import { createTransferCommand } from "./commands/transfers/create.js";
 import { updateTransferCommand } from "./commands/transfers/update.js";
 import { deleteTransferCommand } from "./commands/transfers/delete.js";
 
-// Investments
-import { investmentsCommand } from "./commands/investments/index.js";
-
 // Subscriptions
 import { listSubscriptionsCommand } from "./commands/subscriptions/list.js";
 import { createSubscriptionCommand } from "./commands/subscriptions/create.js";
@@ -104,8 +101,6 @@ transfers.addCommand(listTransfersCommand);
 transfers.addCommand(createTransferCommand);
 transfers.addCommand(updateTransferCommand);
 transfers.addCommand(deleteTransferCommand);
-
-program.addCommand(investmentsCommand);
 
 // Grupo: subscriptions
 const subscriptions = program

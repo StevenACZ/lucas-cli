@@ -13,11 +13,11 @@ export const PLAN_FEATURES: Record<UserPlan, string[]> = {
   FREE: [
     "40 AI actions/month",
     "Max 3 active accounts",
-    "Subscriptions and investments blocked",
+    "Subscriptions blocked",
   ],
   PREMIUM: [
     "Unlimited accounts",
-    "Subscriptions and investments",
+    "Subscriptions",
     "AI limits: 80/day, 250/week, 400/month",
   ],
 };

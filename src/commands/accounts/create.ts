@@ -18,9 +18,14 @@ export interface CreateAccountOptions {
 export function buildCreateAccountBody(
   opts: CreateAccountOptions,
 ): Record<string, unknown> {
+  const type = opts.type.toUpperCase();
+  if (type === "INVESTMENT") {
+    throw new Error("Investment accounts are not available yet.");
+  }
+
   const body: Record<string, unknown> = {
     name: opts.name,
-    type: opts.type,
+    type,
     bank: opts.bank,
     currency: opts.currency ?? "PEN",
   };
@@ -30,7 +35,7 @@ export function buildCreateAccountBody(
     body.creditLimit = parseFiniteNumber(opts.creditLimit, "--credit-limit");
   if (opts.color) body.color = opts.color;
   if (opts.icon) body.icon = opts.icon;
-  if (opts.type === "CREDIT" && opts.statementClosingDay !== undefined) {
+  if (type === "CREDIT" && opts.statementClosingDay !== undefined) {
     const day = parseFiniteNumber(
       opts.statementClosingDay,
       "--statement-closing-day",
@@ -61,7 +66,7 @@ export const createAccountCommand = new Command("create")
   .requiredOption("--name <name>", "Account name")
   .requiredOption(
     "--type <type>",
-    "Account type (DEBIT|CREDIT|CASH|SAVINGS|INVESTMENT|WALLET)",
+    "Account type (DEBIT|CREDIT|CASH|SAVINGS|WALLET)",
   )
   .requiredOption("--bank <bank>", "Bank name")
   .option("--currency <currency>", "Currency code", "PEN")

@@ -60,11 +60,9 @@ describe("ai commands", () => {
     expect(USER_PLANS).toEqual(["FREE", "PREMIUM"]);
     expect(PLAN_FEATURES.FREE).toContain("40 AI actions/month");
     expect(PLAN_FEATURES.FREE).toContain("Max 3 active accounts");
-    expect(PLAN_FEATURES.FREE).toContain(
-      "Subscriptions and investments blocked",
-    );
+    expect(PLAN_FEATURES.FREE).toContain("Subscriptions blocked");
     expect(PLAN_FEATURES.PREMIUM).toContain("Unlimited accounts");
-    expect(PLAN_FEATURES.PREMIUM).toContain("Subscriptions and investments");
+    expect(PLAN_FEATURES.PREMIUM).toContain("Subscriptions");
     expect(PLAN_FEATURES.PREMIUM).toContain(
       "AI limits: 80/day, 250/week, 400/month",
     );
