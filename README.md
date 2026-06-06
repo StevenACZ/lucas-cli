@@ -47,16 +47,17 @@ lucas subscription-charges revert-payment <charge-id>
 lucas investments instruments --rank popular --limit 20
 lucas investments refresh --action eod
 lucas investments buy <account-id> --symbol AAPL --quantity 0.1 --price 200
+lucas investments buy <account-id> --instrument-id <id> --quantity 0.1 --price 200
 lucas investments sell <account-id> --symbol AAPL --quantity 0.1 --price 210
 lucas investments trade <account-id> --instrument-id <id> --side BUY --quantity 1 --price 100
 lucas investments cash deposit <account-id> --amount 250
 lucas investments cash withdraw <account-id> --amount 50
-lucas investments cash dividend <account-id> --symbol AAPL --amount 0.25
+lucas investments cash dividend <account-id> --instrument-id <id> --amount 0.25
 lucas investments transfer --from-account-id <investment-id> --to-account-id <debit-id> --amount 50
 lucas investments history <account-id> --range 90d
 lucas investments history-backfill <account-id> --range ytd --quote-mode missing
 lucas investments report <account-id> --range 7d
-lucas investments import <account-id> --file inversiones.json --dry-run
+lucas investments import <account-id> --file inversiones.json --dry-run --instrument-map AAPL=<id>
 
 lucas settings get
 lucas settings update --subscription-pending-advance-days 1
@@ -95,11 +96,13 @@ List commands are intentionally agent-friendly:
 - `subscription-charges` exposes generated charges, pending-charge pagination,
   account-scoped charges, and pay/confirm/manual-paid/revert actions.
 - `investments` mirrors the Premium backend contract for instrument discovery,
-  portfolio overview, positions, activity, history, buy/sell by symbol, trades,
-  cash deposits/withdrawals/dividends, investment cash transfers, backend
-  refresh/backfill jobs, optional dry-run imports, and archived recovery.
+  portfolio overview, positions, activity, history, buy/sell by symbol or
+  instrument ID, trades, cash deposits/withdrawals/dividends, investment cash
+  transfers, backend refresh/backfill jobs, optional dry-run imports, and
+  archived recovery.
 - `investments import` is optional migration tooling. Day-to-day CLI usage does
-  not require a JSON file.
+  not require a JSON file. Use repeated `--instrument-map SYMBOL=id` entries
+  when the backend reports ambiguous ticker candidates.
 - `accounts list --include-archived` includes archived accounts in the account
   array and adds `archivedAccounts` metadata. Balance/debt totals remain the
   active-account totals returned by LucasApp.

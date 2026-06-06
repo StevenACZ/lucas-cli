@@ -244,4 +244,80 @@ describe("investments commands", () => {
       ],
     });
   });
+
+  it("uses explicit instrument IDs from import maps", () => {
+    const payload = buildHapiImportPayload(
+      {
+        income_taxes: [
+          {
+            event_date: "2026-05-15",
+            ticker: "AAPL",
+            net_amount: 0.03,
+          },
+        ],
+        transactions: [
+          {
+            trade_date: "2026-04-13",
+            ticker: "VOO",
+            quantity: 0.07013,
+            price_per_share: 627.406246,
+            tax_lot_id: "20260413-VOO-001",
+          },
+        ],
+      },
+      {
+        file: "inversiones.json",
+        instrumentMap: ["AAPL=inst-aapl", "VOO=inst-voo"],
+      },
+    );
+
+    expect(payload).toMatchObject({
+      cashAdjustments: [
+        { externalId: "dividend:2026-05-15:AAPL", instrumentId: "inst-aapl" },
+      ],
+      trades: [{ externalId: "20260413-VOO-001", instrumentId: "inst-voo" }],
+    });
+  });
+
+  it("reconciles sell quantities from closed tax lots when available", () => {
+    const payload = buildHapiImportPayload(
+      {
+        tax_lots: [
+          {
+            sale_date: "2026-05-26",
+            ticker: "SCCO",
+            qty_sold: 0.09701,
+          },
+          {
+            sale_date: "2026-05-26",
+            ticker: "SCCO",
+            qty_sold: 0.11107,
+          },
+        ],
+        v6_execution_log: [
+          {
+            trade_date: "2026-05-26",
+            ticker: "SCCO",
+            action: "Sell",
+            quantity: 0.21016,
+            execution_price: 185.86,
+            gross_amount: 39.06,
+          },
+        ],
+      },
+      { file: "inversiones.json" },
+    );
+
+    expect(payload).toMatchObject({
+      trades: [
+        {
+          externalId: "sell:2026-05-26:00:00:SCCO",
+          symbol: "SCCO",
+          side: "SELL",
+          quantity: 0.20808,
+          price: 39.06 / 0.20808,
+        },
+      ],
+    });
+  });
 });

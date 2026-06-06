@@ -106,6 +106,40 @@ describe("apiRequest backend error codes", () => {
     });
   });
 
+  it("keeps safe backend error data visible without debug mode", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        status: 409,
+        json: async () => ({
+          statusMessage: "INVESTMENT_INSTRUMENT_AMBIGUOUS",
+          message: "Instrument is ambiguous",
+          data: {
+            symbol: "ASML",
+            candidates: [{ id: "inst-1", symbol: "ASML" }],
+            token: "secret-token",
+          },
+        }),
+      })),
+    );
+
+    await expect(apiRequest("GET", "/api/investments")).rejects.toThrow(
+      "Instrument is ambiguous",
+    );
+
+    expect(outputError).toHaveBeenCalledWith("Instrument is ambiguous", 409, {
+      code: "INVESTMENT_INSTRUMENT_AMBIGUOUS",
+      message: "Instrument is ambiguous",
+      data: {
+        symbol: "ASML",
+        candidates: [{ id: "inst-1", symbol: "ASML" }],
+        token: "[REDACTED]",
+      },
+      statusCode: 409,
+    });
+  });
+
   it("maps network failures to a CLI-friendly message", async () => {
     vi.stubGlobal(
       "fetch",

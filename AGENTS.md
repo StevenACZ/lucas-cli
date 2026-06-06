@@ -31,6 +31,25 @@ safe to publish.
 - Keep repo docs public-safe; `docs/` is ignored for local smoke notes unless a
   file is intentionally versioned.
 
+## Investment Operations
+
+- Keep investment commands deterministic and explicit. Do not add natural
+  language parsing or free-form execution.
+- Daily writes should prefer backend IDs when a ticker is ambiguous:
+  `investments search <symbol>` → choose an exact candidate →
+  `buy|sell --instrument-id <id>` or `cash dividend --instrument-id <id>`.
+- Symbol writes are still allowed, but backend resolution is authoritative. If
+  a symbol has zero or multiple exact matches, surface the backend candidates in
+  JSON and stop instead of guessing.
+- `investments import` is optional migration tooling, not required for daily
+  usage. It defaults to dry-run unless `--apply` is passed.
+- For imports from Hapi-style JSON, use repeated
+  `--instrument-map SYMBOL=instrumentId` entries when the backend reports
+  ambiguous symbols. The importer may use closed tax lots from the same JSON to
+  reconcile sell quantities before writing.
+- Never put secrets, raw auth tokens, production credentials, or private local
+  financial file contents in committed docs or test fixtures.
+
 ## Verification
 
 Run the relevant checks before reporting completion:

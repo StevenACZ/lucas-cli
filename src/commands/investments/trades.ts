@@ -76,9 +76,10 @@ export const createTradeCommand = new Command("trade")
 
 function buildSymbolTradeCommand(name: string, side: "BUY" | "SELL") {
   return new Command(name)
-    .description(`${side === "BUY" ? "Buy" : "Sell"} an investment by symbol`)
+    .description(`${side === "BUY" ? "Buy" : "Sell"} an investment`)
     .argument("<account-id>", "Investment account ID")
-    .requiredOption("--symbol <symbol>", "Investment ticker symbol")
+    .option("--instrument-id <id>", "Investment instrument ID")
+    .option("--symbol <symbol>", "Investment ticker symbol")
     .requiredOption("--quantity <quantity>", "Trade quantity")
     .requiredOption("--price <price>", "Execution price")
     .option("--fee <fee>", "Trade fee", "0")
@@ -86,6 +87,9 @@ function buildSymbolTradeCommand(name: string, side: "BUY" | "SELL") {
     .option("--notes <notes>", "Trade notes")
     .action(
       async (accountId: string, opts: Omit<CreateTradeOptions, "side">) => {
+        if (Boolean(opts.instrumentId) === Boolean(opts.symbol)) {
+          output.error("Send exactly one of --instrument-id or --symbol", 400);
+        }
         const data = await apiRequest(
           "POST",
           resourcePath("/api/investments/accounts", accountId, "trades"),

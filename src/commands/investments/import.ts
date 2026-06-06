@@ -8,6 +8,7 @@ interface ImportOptions {
   file: string;
   source?: string;
   importBatchId?: string;
+  instrumentMap?: string[];
   apply?: boolean;
   dryRun?: boolean;
 }
@@ -15,6 +16,7 @@ interface ImportOptions {
 interface HapiJson {
   transactions?: Array<Record<string, unknown>>;
   v6_execution_log?: Array<Record<string, unknown>>;
+  tax_lots?: Array<Record<string, unknown>>;
   monthly_log?: Array<Record<string, unknown>>;
   income_taxes?: Array<Record<string, unknown>>;
 }
@@ -35,11 +37,48 @@ function dayToIso(value: unknown): string {
   return `${day}T12:00:00.000Z`;
 }
 
+function parseInstrumentMap(values: string[] | undefined): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const value of values ?? []) {
+    const [symbolRaw, instrumentIdRaw] = value.split("=");
+    const symbol = symbolRaw?.trim().toUpperCase();
+    const instrumentId = instrumentIdRaw?.trim();
+    if (!symbol || !instrumentId) {
+      output.error("--instrument-map must use SYMBOL=instrumentId", 400);
+    }
+    map.set(symbol, instrumentId);
+  }
+  return map;
+}
+
+function instrumentReference(
+  ticker: string,
+  instrumentMap: Map<string, string>,
+): { instrumentId: string } | { symbol: string } {
+  const instrumentId = instrumentMap.get(ticker.toUpperCase());
+  return instrumentId ? { instrumentId } : { symbol: ticker };
+}
+
+function closedLotQuantities(data: HapiJson): Map<string, number> {
+  const quantities = new Map<string, number>();
+  for (const row of data.tax_lots ?? []) {
+    const ticker = asString(row.ticker);
+    const saleDate = asString(row.sale_date);
+    const quantity = asNumber(row.qty_sold);
+    if (!ticker || !saleDate || !quantity) continue;
+    const key = `${saleDate}:${ticker.toUpperCase()}`;
+    quantities.set(key, (quantities.get(key) ?? 0) + quantity);
+  }
+  return quantities;
+}
+
 export function buildHapiImportPayload(
   data: HapiJson,
   opts: ImportOptions,
 ): Record<string, unknown> {
   const source = opts.source ?? "hapi-json";
+  const instrumentMap = parseInstrumentMap(opts.instrumentMap);
+  const lotQuantities = closedLotQuantities(data);
   const trades: Array<Record<string, unknown>> = [];
   const cashAdjustments: Array<Record<string, unknown>> = [];
 
@@ -64,7 +103,7 @@ export function buildHapiImportPayload(
     cashAdjustments.push({
       externalId: `dividend:${date}:${ticker}`,
       amount,
-      symbol: ticker,
+      ...instrumentReference(ticker, instrumentMap),
       occurredAt: dayToIso(date),
       type: "DIVIDEND",
       note: asString(row.notes) ?? `${ticker} dividend`,
@@ -81,7 +120,7 @@ export function buildHapiImportPayload(
     if (!ticker || !quantity || !price || !date || !externalId) continue;
     trades.push({
       externalId,
-      symbol: ticker,
+      ...instrumentReference(ticker, instrumentMap),
       side: "BUY",
       quantity,
       price,
@@ -94,15 +133,20 @@ export function buildHapiImportPayload(
   for (const row of data.v6_execution_log ?? []) {
     if (asString(row.action)?.toUpperCase() !== "SELL") continue;
     const ticker = asString(row.ticker);
-    const quantity = asNumber(row.quantity);
-    const price = asNumber(row.execution_price);
+    const executionQuantity = asNumber(row.quantity);
+    const executionPrice = asNumber(row.execution_price);
     const date = asString(row.trade_date);
-    if (!ticker || !quantity || !price || !date) continue;
+    if (!ticker || !executionQuantity || !executionPrice || !date) continue;
+    const lotQuantity = lotQuantities.get(`${date}:${ticker.toUpperCase()}`);
+    const quantity = lotQuantity ?? executionQuantity;
+    const grossAmount = asNumber(row.gross_amount);
+    const price =
+      lotQuantity && grossAmount ? grossAmount / lotQuantity : executionPrice;
     const fee =
       (asNumber(row.clearing_fee) ?? 0) + (asNumber(row.regulatory_fees) ?? 0);
     trades.push({
       externalId: `sell:${date}:${asString(row.trade_time) ?? "00:00"}:${ticker}`,
-      symbol: ticker,
+      ...instrumentReference(ticker, instrumentMap),
       side: "SELL",
       quantity,
       price,
@@ -127,6 +171,12 @@ export const importInvestmentsCommand = new Command("import")
   .requiredOption("--file <path>", "Source JSON file")
   .option("--source <source>", "Import source key", "hapi-json")
   .option("--import-batch-id <id>", "Import batch identifier")
+  .option(
+    "--instrument-map <symbol=id>",
+    "Resolve an ambiguous ticker with an explicit backend instrument ID",
+    (value, previous: string[]) => [...previous, value],
+    [],
+  )
   .option("--apply", "Apply the import. Defaults to dry-run.")
   .option("--dry-run", "Validate without writing")
   .action(async (accountId: string, opts: ImportOptions) => {

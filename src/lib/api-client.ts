@@ -62,6 +62,7 @@ function buildSafeErrorDetails(
   const safeDetails: Record<string, unknown> = {
     ...(code && { code }),
     ...(message && { message }),
+    ...("data" in payload && { data: redactSensitiveFields(payload.data) }),
     statusCode,
   };
 

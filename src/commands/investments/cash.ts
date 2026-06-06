@@ -10,6 +10,7 @@ interface CreateCashAdjustmentOptions {
   occurredAt?: string;
   note?: string;
   type?: string;
+  instrumentId?: string;
   symbol?: string;
 }
 
@@ -28,6 +29,7 @@ export function buildCreateCashAdjustmentBody(
     ...(opts.occurredAt && { occurredAt: opts.occurredAt }),
     ...(opts.note && { note: opts.note }),
     ...(opts.type && { type: opts.type }),
+    ...(opts.instrumentId && { instrumentId: opts.instrumentId }),
     ...(opts.symbol && { symbol: opts.symbol }),
   };
 }
@@ -107,11 +109,15 @@ cashCommand
   .command("dividend")
   .description("Record an investment dividend")
   .argument("<account-id>", "Investment account ID")
-  .requiredOption("--symbol <symbol>", "Dividend instrument ticker symbol")
+  .option("--instrument-id <id>", "Dividend instrument ID")
+  .option("--symbol <symbol>", "Dividend instrument ticker symbol")
   .requiredOption("--amount <amount>", "Dividend amount")
   .option("--occurred-at <iso>", "Movement datetime (ISO 8601)")
   .option("--note <note>", "Movement note")
   .action(async (accountId: string, opts: CreateCashAdjustmentOptions) => {
+    if (Boolean(opts.instrumentId) === Boolean(opts.symbol)) {
+      output.error("Send exactly one of --instrument-id or --symbol", 400);
+    }
     const data = await postCashAdjustment(accountId, {
       ...opts,
       type: "DIVIDEND",
