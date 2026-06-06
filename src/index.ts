@@ -39,6 +39,7 @@ import { markPaidCommand } from "./commands/subscriptions/mark-paid.js";
 import { subscriptionCalendarCommand } from "./commands/subscriptions/calendar.js";
 import { subscriptionChargesCommand } from "./commands/subscription-charges/index.js";
 import { subscriptionGroupsCommand } from "./commands/subscription-groups/index.js";
+import { settingsCommand } from "./commands/settings/index.js";
 
 // Loans
 import { listLoansCommand } from "./commands/loans/list.js";
@@ -119,6 +120,7 @@ subscriptions.addCommand(subscriptionCalendarCommand);
 
 program.addCommand(subscriptionGroupsCommand);
 program.addCommand(subscriptionChargesCommand);
+program.addCommand(settingsCommand);
 
 // Grupo: loans
 const loans = program.command("loans").description("Manage loans");

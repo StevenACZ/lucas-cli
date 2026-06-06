@@ -91,3 +91,15 @@ subscriptionChargesCommand
     );
     output.success(data);
   });
+
+subscriptionChargesCommand
+  .command("revert-payment")
+  .description("Revert a paid subscription charge")
+  .argument("<charge-id>", "Subscription charge ID")
+  .action(async (chargeId: string) => {
+    const data = await apiRequest(
+      "POST",
+      resourcePath("/api/subscription-charges", chargeId, "revert-payment"),
+    );
+    output.success(data);
+  });

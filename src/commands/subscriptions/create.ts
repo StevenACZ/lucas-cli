@@ -20,6 +20,12 @@ export const createSubscriptionCommand = new Command("create")
   .option("--auto-record", "Enable auto-record")
   .option("--start-date <date>", "Start date (YYYY-MM-DD)")
   .option("--description <desc>", "Description")
+  .option("--reminder-mode <mode>", "Reminder mode (DEFAULT|CUSTOM|DISABLED)")
+  .option("--reminder-advance-days <days>", "Reminder advance days")
+  .option(
+    "--reminder-time-minutes <minutes>",
+    "Reminder time as local minutes since midnight",
+  )
   .action(async (opts) => {
     const body = buildBody(opts, [
       { opt: "name", body: "name" },
@@ -37,6 +43,17 @@ export const createSubscriptionCommand = new Command("create")
       { opt: "autoRecord", body: "autoRecord", type: "boolean" },
       { opt: "startDate", body: "startDate" },
       { opt: "description", body: "description" },
+      { opt: "reminderMode", body: "reminderMode" },
+      {
+        opt: "reminderAdvanceDays",
+        body: "reminderAdvanceDays",
+        type: "number",
+      },
+      {
+        opt: "reminderTimeMinutes",
+        body: "reminderTimeMinutes",
+        type: "number",
+      },
     ]);
     const data = await apiRequest("POST", "/api/subscriptions", body);
     output.success(data);

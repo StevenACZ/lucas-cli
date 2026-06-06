@@ -32,6 +32,14 @@ export const updateSubscriptionCommand = new Command("update")
   .option("--no-auto-record", "Disable auto-record")
   .option("--is-active", "Activate subscription")
   .option("--no-is-active", "Deactivate subscription")
+  .option("--reminder-mode <mode>", "Reminder mode (DEFAULT|CUSTOM|DISABLED)")
+  .option("--reminder-advance-days <days>", "Reminder advance days")
+  .option("--clear-reminder-advance-days", "Clear custom reminder advance days")
+  .option(
+    "--reminder-time-minutes <minutes>",
+    "Reminder time as local minutes since midnight",
+  )
+  .option("--clear-reminder-time-minutes", "Clear custom reminder time")
   .addHelpText(
     "after",
     "\nExample:\n  lucas subscriptions update <id> --billing-day 30\n",
@@ -58,6 +66,19 @@ export const updateSubscriptionCommand = new Command("update")
       { opt: "startDate", body: "startDate", clearOpt: "clearStartDate" },
       { opt: "autoRecord", body: "autoRecord", type: "boolean" },
       { opt: "isActive", body: "isActive", type: "boolean" },
+      { opt: "reminderMode", body: "reminderMode" },
+      {
+        opt: "reminderAdvanceDays",
+        body: "reminderAdvanceDays",
+        type: "number",
+        clearOpt: "clearReminderAdvanceDays",
+      },
+      {
+        opt: "reminderTimeMinutes",
+        body: "reminderTimeMinutes",
+        type: "number",
+        clearOpt: "clearReminderTimeMinutes",
+      },
     ]);
     const data = await apiRequest(
       "PUT",

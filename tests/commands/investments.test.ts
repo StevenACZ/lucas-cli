@@ -10,9 +10,11 @@ import {
 } from "../../src/commands/investments/instruments.js";
 import {
   buildInvestmentActivityParams,
+  buildInvestmentHistoryBackfillBody,
   buildInvestmentHistoryParams,
 } from "../../src/commands/investments/portfolio.js";
 import { buildInvestmentRefreshParams } from "../../src/commands/investments/refresh.js";
+import { buildHapiImportPayload } from "../../src/commands/investments/import.js";
 import {
   buildCreateTradeBody,
   buildUpdateTradeBody,
@@ -89,6 +91,24 @@ describe("investments commands", () => {
     });
   });
 
+  it("builds symbol trade payloads", () => {
+    expect(
+      buildCreateTradeBody({
+        symbol: "AAPL",
+        side: "buy",
+        quantity: "0.5",
+        price: "200",
+      }),
+    ).toEqual({
+      symbol: "AAPL",
+      side: "BUY",
+      quantity: 0.5,
+      price: 200,
+      fee: 0,
+      executedAt: expect.any(String),
+    });
+  });
+
   it("builds update trade payload and clear notes", () => {
     expect(
       buildUpdateTradeBody({
@@ -107,11 +127,13 @@ describe("investments commands", () => {
         amount: "250",
         occurredAt: "2026-05-28T03:00:00.000Z",
         note: "Deposit",
+        type: "DEPOSIT",
       }),
     ).toEqual({
       amount: 250,
       occurredAt: "2026-05-28T03:00:00.000Z",
       note: "Deposit",
+      type: "DEPOSIT",
     });
 
     expect(
@@ -150,6 +172,76 @@ describe("investments commands", () => {
       action: "catalog",
       exchanges: "NYSE,NASDAQ",
       country: "United States",
+    });
+  });
+
+  it("builds history backfill body", () => {
+    expect(
+      buildInvestmentHistoryBackfillBody({
+        range: "ytd",
+        quoteMode: "missing",
+      }),
+    ).toEqual({ range: "ytd", quoteMode: "missing" });
+  });
+
+  it("normalizes Hapi investment JSON for import", () => {
+    const payload = buildHapiImportPayload(
+      {
+        monthly_log: [
+          {
+            month: "2026-04-01",
+            deposit_received: 399.99,
+            notes: "Initial deposit",
+          },
+        ],
+        income_taxes: [
+          {
+            event_date: "2026-05-15",
+            ticker: "AAPL",
+            net_amount: 0.03,
+          },
+        ],
+        transactions: [
+          {
+            trade_date: "2026-04-13",
+            ticker: "VOO",
+            quantity: 0.07013,
+            price_per_share: 627.406246,
+            fee: 0.15,
+            tax_lot_id: "20260413-VOO-001",
+          },
+        ],
+        v6_execution_log: [
+          {
+            trade_date: "2026-05-26",
+            trade_time: "10:37",
+            ticker: "RSP",
+            action: "Sell",
+            quantity: 0.44151,
+            execution_price: 207.47,
+            clearing_fee: 0.15,
+            regulatory_fees: 0.02,
+          },
+        ],
+      },
+      { file: "inversiones.json", apply: false },
+    );
+
+    expect(payload).toMatchObject({
+      source: "hapi-json",
+      dryRun: true,
+      cashAdjustments: [
+        { externalId: "deposit:2026-04-01", type: "DEPOSIT" },
+        { externalId: "dividend:2026-05-15:AAPL", type: "DIVIDEND" },
+      ],
+      trades: [
+        { externalId: "20260413-VOO-001", symbol: "VOO", side: "BUY" },
+        {
+          externalId: "sell:2026-05-26:10:37:RSP",
+          symbol: "RSP",
+          side: "SELL",
+        },
+      ],
     });
   });
 });

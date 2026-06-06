@@ -6,7 +6,8 @@ import { output } from "../../lib/output.js";
 import { resourcePath } from "../../lib/resource-path.js";
 
 interface CreateTradeOptions {
-  instrumentId: string;
+  instrumentId?: string;
+  symbol?: string;
   side: string;
   quantity: string;
   price: string;
@@ -29,7 +30,8 @@ export function buildCreateTradeBody(
   opts: CreateTradeOptions,
 ): Record<string, unknown> {
   return {
-    instrumentId: opts.instrumentId,
+    ...(opts.instrumentId && { instrumentId: opts.instrumentId }),
+    ...(opts.symbol && { symbol: opts.symbol }),
     side: opts.side.toUpperCase(),
     quantity: parseFiniteNumber(opts.quantity, "--quantity"),
     price: parseFiniteNumber(opts.price, "--price"),
@@ -55,7 +57,8 @@ export function buildUpdateTradeBody(
 export const createTradeCommand = new Command("trade")
   .description("Create an investment trade")
   .argument("<account-id>", "Investment account ID")
-  .requiredOption("--instrument-id <id>", "Investment instrument ID")
+  .option("--instrument-id <id>", "Investment instrument ID")
+  .option("--symbol <symbol>", "Investment ticker symbol")
   .requiredOption("--side <side>", "Trade side (BUY|SELL)")
   .requiredOption("--quantity <quantity>", "Trade quantity")
   .requiredOption("--price <price>", "Execution price")
@@ -70,6 +73,31 @@ export const createTradeCommand = new Command("trade")
     );
     output.success(data);
   });
+
+function buildSymbolTradeCommand(name: string, side: "BUY" | "SELL") {
+  return new Command(name)
+    .description(`${side === "BUY" ? "Buy" : "Sell"} an investment by symbol`)
+    .argument("<account-id>", "Investment account ID")
+    .requiredOption("--symbol <symbol>", "Investment ticker symbol")
+    .requiredOption("--quantity <quantity>", "Trade quantity")
+    .requiredOption("--price <price>", "Execution price")
+    .option("--fee <fee>", "Trade fee", "0")
+    .option("--executed-at <iso>", "Execution datetime (ISO 8601)")
+    .option("--notes <notes>", "Trade notes")
+    .action(
+      async (accountId: string, opts: Omit<CreateTradeOptions, "side">) => {
+        const data = await apiRequest(
+          "POST",
+          resourcePath("/api/investments/accounts", accountId, "trades"),
+          buildCreateTradeBody({ ...opts, side }),
+        );
+        output.success(data);
+      },
+    );
+}
+
+export const buyTradeCommand = buildSymbolTradeCommand("buy", "BUY");
+export const sellTradeCommand = buildSymbolTradeCommand("sell", "SELL");
 
 export const updateTradeCommand = new Command("trade-update")
   .description("Update an investment trade")

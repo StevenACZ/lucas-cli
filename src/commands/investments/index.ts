@@ -8,19 +8,26 @@ import { refreshInvestmentsCommand } from "./refresh.js";
 import {
   investmentActivityCommand,
   investmentHistoryCommand,
+  investmentHistoryBackfillCommand,
   investmentOverviewCommand,
   investmentPositionsCommand,
+  investmentReportCommand,
 } from "./portfolio.js";
 import {
+  buyTradeCommand,
   createTradeCommand,
   deleteTradeCommand,
+  sellTradeCommand,
   updateTradeCommand,
 } from "./trades.js";
 import {
+  cashCommand,
   createCashAdjustmentCommand,
   deleteCashAdjustmentCommand,
   updateCashAdjustmentCommand,
 } from "./cash.js";
+import { importInvestmentsCommand } from "./import.js";
+import { investmentTransferCommand } from "./transfer.js";
 import {
   listArchivedInvestmentItemsCommand,
   listArchivedInvestmentsCommand,
@@ -44,12 +51,19 @@ investmentsCommand.addCommand(investmentOverviewCommand);
 investmentsCommand.addCommand(investmentPositionsCommand);
 investmentsCommand.addCommand(investmentActivityCommand);
 investmentsCommand.addCommand(investmentHistoryCommand);
+investmentsCommand.addCommand(investmentHistoryBackfillCommand);
+investmentsCommand.addCommand(investmentReportCommand);
 investmentsCommand.addCommand(createTradeCommand);
+investmentsCommand.addCommand(buyTradeCommand);
+investmentsCommand.addCommand(sellTradeCommand);
+investmentsCommand.addCommand(cashCommand);
 investmentsCommand.addCommand(updateTradeCommand);
 investmentsCommand.addCommand(deleteTradeCommand);
 investmentsCommand.addCommand(createCashAdjustmentCommand);
 investmentsCommand.addCommand(updateCashAdjustmentCommand);
 investmentsCommand.addCommand(deleteCashAdjustmentCommand);
+investmentsCommand.addCommand(investmentTransferCommand);
+investmentsCommand.addCommand(importInvestmentsCommand);
 investmentsCommand.addCommand(listArchivedInvestmentsCommand);
 investmentsCommand.addCommand(listArchivedInvestmentItemsCommand);
 investmentsCommand.addCommand(restoreArchivedInvestmentsCommand);
