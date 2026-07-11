@@ -10,11 +10,15 @@ import {
 import { homedir } from "os";
 import { join } from "path";
 
+export type DeviceScope = "READ_ONLY" | "FULL";
+
 export interface Credentials {
   token: string;
   apiUrl: string;
   deviceName: string;
   expiresAt: string;
+  // Absent in credential files written before device-auth v2.
+  scope?: DeviceScope;
 }
 
 export const CONFIG_DIR = join(homedir(), ".config", "lucas");

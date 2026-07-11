@@ -1,6 +1,6 @@
 {
   "name": "lucasapp-cli",
-  "version": "0.6.8",
+  "version": "0.7.0",
   "description": "LucasApp CLI - Financial data management for AI agents",
   "author": "StevenACZ",
   "license": "MIT",
@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git+https://github.com/StevenACZ/lucas-cli.git"
   },
-  "homepage": "https://dashboard.lucasapp.app/cli",
+  "homepage": "https://github.com/StevenACZ/lucas-cli",
   "type": "module",
   "packageManager": "bun@1.3.12",
   "bin": {
@@ -19,7 +19,7 @@
     "build": "bun build src/index.ts --outdir dist --target node",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bunx typescript@7.0.2 --noEmit",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests"
   },
@@ -33,24 +33,18 @@
     "ai-agents"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=22.12"
   },
   "dependencies": {
-    "commander": "^14.0.3"
-  },
-  "overrides": {
-    "brace-expansion": "^5.0.6",
-    "picomatch": "^4.0.4",
-    "postcss": "^8.5.14",
-    "vite": "^8.0.11"
+    "commander": "^15.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^25.6.2",
-    "eslint": "^10.3.0",
-    "prettier": "^3.8.3",
+    "@types/node": "^26.1.1",
+    "eslint": "^10.7.0",
+    "prettier": "^3.9.5",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.59.2",
-    "vitest": "^4.1.5"
+    "typescript-eslint": "^8.63.0",
+    "vitest": "^4.1.10"
   }
 }

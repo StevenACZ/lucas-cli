@@ -1,1 +1,3 @@
-export const CLI_VERSION = "0.6.8";
+import packageJson from "../../package.json";
+
+export const CLI_VERSION: string = packageJson.version;

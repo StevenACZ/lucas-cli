@@ -14,15 +14,19 @@ safe to publish.
   provenance.
 - Keep `LUCAS_API_URL` as an advanced development override, not normal user
   setup.
-- Default production API is `https://api.lucasapp.app`; browser approval lives
-  on `https://dashboard.lucasapp.app/cli`.
+- Default production API is `https://api.lucasapp.app`; device-auth approval
+  happens in the LucasApp iOS app (Settings → Security → CLI Access), with a
+  user-chosen per-device scope (`READ_ONLY` or `FULL`). There is no browser or
+  dashboard approval step.
 - Keep `investments` commands as thin API clients; backend owns quotes,
   catalog search, Premium gating, cash validation, and archive semantics.
 - Keep subscription calendar and group commands as thin API clients; backend
   owns Premium gating, billing dates, group ownership, and reorder semantics.
 - Keep subscription charge commands as thin API clients; backend owns charge
   generation, transaction side effects, confirmation, and SSE semantics.
-- Keep plan copy synced to backend limits; CLI does not implement billing.
+- Plan limits and prices are backend-owned: pass backend error messages
+  through and never hardcode plan numbers or prices; CLI does not implement
+  billing.
 - Match public list commands to the backend response shape, including
   pagination wrappers such as `{ items, summary, pagination }`.
 - Build API paths with `resourcePath()` when an ID appears in the URL path.

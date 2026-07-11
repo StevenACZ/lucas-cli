@@ -1,24 +1,19 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
+import {
+  extractItems,
+  type Account,
+  type AccountsSummary,
+} from "../../lib/types.js";
 
-interface AccountLike {
-  type?: string;
-  creditLimit?: number | null;
-  currentDebt?: number | null;
-  [key: string]: unknown;
-}
-
-interface AccountsSummaryLike {
-  accounts?: AccountLike[];
-  [key: string]: unknown;
-}
-
-export function withAvailableCredit<T extends AccountsSummaryLike>(data: T): T {
+export function withAvailableCredit<T extends AccountsSummary>(data: T): T {
   if (!data || !Array.isArray(data.accounts)) return data;
   const accounts = data.accounts.map((acc) => {
     if (acc.type === "CREDIT" && acc.creditLimit != null) {
       const limit = Number(acc.creditLimit);
+      // currentDebt can be negative (credit balance in the user's favor),
+      // which intentionally raises availableCredit above creditLimit.
       const debt = Number(acc.currentDebt ?? 0);
       const available = Math.max(0, Math.round((limit - debt) * 100) / 100);
       return { ...acc, availableCredit: available };
@@ -28,10 +23,10 @@ export function withAvailableCredit<T extends AccountsSummaryLike>(data: T): T {
   return { ...data, accounts };
 }
 
-export function withArchivedAccounts<T extends AccountsSummaryLike>(
+export function withArchivedAccounts<T extends AccountsSummary>(
   data: T,
-  archivedAccounts: AccountLike[],
-): T & { archivedAccounts: AccountLike[]; archivedAccountsCount: number } {
+  archivedAccounts: Account[],
+): T & { archivedAccounts: Account[]; archivedAccountsCount: number } {
   return {
     ...data,
     accounts: [
@@ -43,30 +38,24 @@ export function withArchivedAccounts<T extends AccountsSummaryLike>(
   };
 }
 
-export function getArchivedAccountItems(response: unknown): AccountLike[] {
-  if (Array.isArray(response)) return response as AccountLike[];
-  if (
-    response &&
-    typeof response === "object" &&
-    Array.isArray((response as { accounts?: unknown }).accounts)
-  ) {
-    return (response as { accounts: AccountLike[] }).accounts;
-  }
-  if (
-    response &&
-    typeof response === "object" &&
-    Array.isArray((response as { items?: unknown }).items)
-  ) {
-    return (response as { items: AccountLike[] }).items;
-  }
-  return [];
+export function getArchivedAccountItems(response: unknown): Account[] {
+  return extractItems<Account>(response, ["accounts", "items"]) ?? [];
 }
 
 export const listAccountsCommand = new Command("list")
   .description("List all accounts (CREDIT accounts include availableCredit)")
   .option("--include-archived", "Include archived accounts")
+  .addHelpText(
+    "after",
+    `
+Notes:
+  - availableCredit = max(0, creditLimit - currentDebt). A negative
+    currentDebt (overpaid card, balance in the user's favor) increases
+    availableCredit above creditLimit; this is intentional.
+`,
+  )
   .action(async (opts) => {
-    const data = await apiRequest<AccountsSummaryLike>("GET", "/api/accounts");
+    const data = await apiRequest<AccountsSummary>("GET", "/api/accounts");
     if (!opts.includeArchived) {
       output.success(withAvailableCredit(data));
       return;

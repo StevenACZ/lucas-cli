@@ -8,6 +8,7 @@ export const updateTransferCommand = new Command("update")
   .description("Update a transfer")
   .argument("<id>", "Transfer ID")
   .requiredOption("--amount <amount>", "Transfer amount")
+  .option("--to-account-id <id>", "New destination account ID")
   .option("--to-amount <amount>", "Destination amount (cross-currency)")
   .option("--clear-to-amount", "Clear destination amount")
   .option("--description <desc>", "Description")
@@ -20,6 +21,7 @@ export const updateTransferCommand = new Command("update")
   .action(async (id, opts) => {
     const body = buildBody(opts, [
       { opt: "amount", body: "amount", type: "number" },
+      { opt: "toAccountId", body: "toAccountId" },
       {
         opt: "toAmount",
         body: "toAmount",

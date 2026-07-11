@@ -1,20 +1,8 @@
-export interface SubscriptionLike {
-  id: string;
-  lastBilling?: string | null;
-  nextBilling?: string | null;
-  isActive?: boolean;
-}
-
-export interface SubscriptionChargeLike {
-  subscriptionId: string;
-  dueDate: string;
-  paidAt?: string | null;
-  status: string;
-}
+import type { Subscription, SubscriptionCharge } from "./types.js";
 
 function getComputedStatus(
-  subscription: SubscriptionLike,
-  charge: SubscriptionChargeLike | undefined,
+  subscription: Subscription,
+  charge: SubscriptionCharge | undefined,
   now: Date,
 ) {
   if (subscription.isActive === false) return "INACTIVE";
@@ -26,8 +14,8 @@ function getComputedStatus(
 }
 
 function getLastBillingExplanation(
-  subscription: SubscriptionLike,
-  charge: SubscriptionChargeLike | undefined,
+  subscription: Subscription,
+  charge: SubscriptionCharge | undefined,
 ) {
   if (charge?.paidAt) return "latest_charge_paid";
   if (subscription.lastBilling) return "subscription_last_billing";
@@ -36,8 +24,8 @@ function getLastBillingExplanation(
 }
 
 export function enrichSubscriptionsWithCharges<
-  TSubscription extends SubscriptionLike,
-  TCharge extends SubscriptionChargeLike,
+  TSubscription extends Subscription,
+  TCharge extends SubscriptionCharge,
 >(subscriptions: TSubscription[], charges: TCharge[], now: Date = new Date()) {
   const latestBySubscription = new Map<string, TCharge>();
   for (const charge of charges) {

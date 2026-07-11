@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
+import { compactParams } from "../../lib/query-params.js";
 import { output } from "../../lib/output.js";
 
 interface SubscriptionCalendarOptions {
@@ -12,12 +13,12 @@ interface SubscriptionCalendarOptions {
 export function buildSubscriptionCalendarParams(
   opts: SubscriptionCalendarOptions,
 ): Record<string, string> | undefined {
-  const params: Record<string, string> = {};
-  if (opts.month) params.month = opts.month;
-  if (opts.type) params.type = opts.type;
-  if (opts.frequency) params.frequency = opts.frequency;
-  if (opts.groupId) params.groupId = opts.groupId;
-  return Object.keys(params).length > 0 ? params : undefined;
+  return compactParams({
+    month: opts.month,
+    type: opts.type,
+    frequency: opts.frequency,
+    groupId: opts.groupId,
+  });
 }
 
 export const subscriptionCalendarCommand = new Command("calendar")

@@ -1,6 +1,11 @@
-// Salida JSON estandarizada para consumo por AI agents
+// Standardized JSON output for consumption by scripts and AI agents.
 
-export const output = {
+interface Output {
+  success<T>(data: T): void;
+  error(message: string, statusCode?: number, details?: unknown): never;
+}
+
+export const output: Output = {
   success<T>(data: T): void {
     console.log(JSON.stringify({ ok: true, data }, null, 2));
   },

@@ -2,8 +2,8 @@ import { Command } from "commander";
 import {
   findNextPayableInstallment,
   getInstallmentRemaining,
-  type LoanDetailsLike,
 } from "../../lib/loan-domain.js";
+import type { LoanDetails } from "../../lib/types.js";
 import { output } from "../../lib/output.js";
 import {
   executePayLoan,
@@ -25,7 +25,7 @@ export async function executeMarkPaidLoan(
   id: string,
   opts: MarkPaidLoanOptions,
 ): Promise<PayLoanExecutionResult & Record<string, unknown>> {
-  const loan = await apiRequest<LoanDetailsLike>(
+  const loan = await apiRequest<LoanDetails>(
     "GET",
     resourcePath("/api/loans", id),
   );

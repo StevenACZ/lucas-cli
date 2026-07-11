@@ -1,8 +1,5 @@
-import {
-  getInstallmentRemaining,
-  getLoanRemaining,
-  type LoanDetailsLike,
-} from "./loan-domain.js";
+import { getInstallmentRemaining, getLoanRemaining } from "./loan-domain.js";
+import type { LoanDetails } from "./types.js";
 
 export interface LoanVerificationResult {
   verified: boolean;
@@ -15,8 +12,8 @@ export interface LoanVerificationResult {
 }
 
 export function verifyLoanPayment(params: {
-  beforeLoan: LoanDetailsLike;
-  afterLoan: LoanDetailsLike;
+  beforeLoan: LoanDetails;
+  afterLoan: LoanDetails;
   expectedLoanReduction?: number;
   targetInstallmentId?: string;
 }): LoanVerificationResult {

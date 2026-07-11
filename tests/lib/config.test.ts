@@ -38,7 +38,7 @@ describe("config credential storage", () => {
       token: "token",
       apiUrl: "https://example.test",
       deviceName: "Mac CLI",
-      expiresAt: "2999-01-01T00:00:00.000Z",
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     });
 
     const credentialsPath = join(CONFIG_DIR, "credentials.json");

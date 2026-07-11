@@ -2,20 +2,64 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.7.0] - 2026-07-11
+
+### Added
+
+- `lucas stats overview` — full stats for one period (`--period
+WEEK|MONTH|SIX_MONTHS|YEAR`, `--currency`, `--offset` for historical
+  windows) in a single call.
+- `lucas accounts pay-expense` and `lucas accounts pay-expenses` — pay one or
+  up to 50 credit-card expenses atomically from `ACCOUNT`, `EXTERNAL`, or
+  `CASHBACK` funding sources (batch items via repeatable
+  `--item <transactionId[=amount]>`).
+- Credit-card cashback: `lucas accounts cashback-redeem` and
+  `cashback-adjust`, `--cashback-enabled`/`--cashback-rate` on
+  `accounts create`/`update`, and `--cashback-amount` on
+  `transactions create`/`update`.
+- `lucas ai insights get` and `lucas ai insights generate --period WEEK|MONTH`
+  for the persisted AI financial insight.
+- `lucas trash` group: `summary`, `transactions`, `transfers`,
+  `restore-transaction`, `restore-transfer`, `permanent-delete-transaction`,
+  `permanent-delete-transfer`, `empty-transactions`, and `empty-transfers`.
+- `lucas accounts archive` / `unarchive`, `lucas accounts stats`, and
+  `lucas accounts balance-history --range --anchor-date`.
+- `lucas transactions get <id>` for a single transaction.
+- `lucas transfers update --to-account-id` to correct the destination account.
+- `lucas subscriptions create/update --payment-start-day` (and
+  `--clear-payment-start-day`) for backend payment windows, plus
+  `lucas subscriptions services` for the service catalog.
+- `lucas exchange-rate bcr` for the USD→PEN reference rate.
+- `lucas auth status --remote` verifies the token against `GET /api/auth/me`.
+- API requests now time out (30s default, 120s for AI endpoints), expose the
+  backend `x-request-id` in error details, and surface `Retry-After` on
+  HTTP 429 as `retryAfterSeconds`.
 
 ### Changed
 
-- Updated plan copy to the official Free and Premium limits: Free includes 40 AI
-  actions per month and up to 3 active accounts; Premium uses 80/day, 250/week,
-  and 400/month with monthly and annual App Store billing handled outside the
-  CLI.
-- Kept public docs compact and clarified that local smoke notes belong outside
-  versioned package docs.
+- **Breaking:** `lucas auth login` uses the new device-auth flow approved from
+  the LucasApp iOS app (Settings → Security → CLI Access). The browser/dashboard
+  approval step is gone, tokens carry a user-chosen scope (`READ_ONLY` or
+  `FULL`), and a denied request is reported explicitly. On success the CLI now
+  prints the standard JSON envelope (`deviceName`, `scope`, `expiresAt`) to
+  stdout. Existing tokens are invalid; run `lucas auth login` again.
+- **Breaking:** removed `--merchant`/`--clear-merchant` from
+  `transactions create`/`update`; the backend dropped the merchant field.
+- `CLI_READ_ONLY` and `CLI_FORBIDDEN_ENDPOINT` backend errors map to
+  actionable CLI messages on every command.
+- Plan copy is no longer hardcoded: backend error messages pass through, with
+  neutral fallbacks (no plan numbers or prices) when the backend sends none.
+- CLI version is read from `package.json` instead of a hand-maintained
+  constant.
+- Toolchain: commander 15 (Node >= 22.12), typecheck via TypeScript 7,
+  eslint 10.7, typescript-eslint 8.63, vitest 4.1.10, prettier 3.9.5.
+- Homepage now points to the GitHub repository (the web dashboard was
+  retired).
 
 ### Removed
 
-- Removed the old local debt-detail smoke checklist from the workspace.
+- Removed hardcoded plan copy (`PLAN_FEATURES`) and the obsolete dependency
+  `overrides` block.
 
 ## [0.6.8] - 2026-05-28
 

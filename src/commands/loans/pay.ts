@@ -1,9 +1,7 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
-import {
-  findNextPayableInstallment,
-  type LoanDetailsLike,
-} from "../../lib/loan-domain.js";
+import { findNextPayableInstallment } from "../../lib/loan-domain.js";
+import type { LoanDetails } from "../../lib/types.js";
 import {
   verifyLoanPayment,
   type LoanVerificationResult,
@@ -28,7 +26,7 @@ export interface PayLoanOptions {
 
 export interface PayLoanExecutionResult {
   payment: unknown;
-  loan?: LoanDetailsLike;
+  loan?: LoanDetails;
   verification?: LoanVerificationResult;
 }
 
@@ -57,7 +55,7 @@ export async function executePayLoan(
   const body = buildPayLoanPayload(opts);
   const loanPath = resourcePath("/api/loans", id);
   const beforeLoan = opts.verified
-    ? await apiRequest<LoanDetailsLike>("GET", loanPath)
+    ? await apiRequest<LoanDetails>("GET", loanPath)
     : undefined;
   const payment = await apiRequest(
     "POST",
@@ -65,7 +63,7 @@ export async function executePayLoan(
     body,
   );
   if (!beforeLoan) return { payment };
-  const afterLoan = await apiRequest<LoanDetailsLike>("GET", loanPath);
+  const afterLoan = await apiRequest<LoanDetails>("GET", loanPath);
   const targetInstallment = findNextPayableInstallment(beforeLoan);
   const expectedLoanReduction =
     typeof body.loanAmount === "number"

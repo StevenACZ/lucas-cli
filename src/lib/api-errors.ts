@@ -1,9 +1,3 @@
-export type ApiErrorCode =
-  | "AI_PLAN_REQUIRED"
-  | "AI_LIMIT_REACHED"
-  | "SUBSCRIPTION_REQUIRED"
-  | "ACCOUNT_LIMIT_EXCEEDED";
-
 export interface ApiErrorPayload {
   code?: string;
   statusMessage?: string;
@@ -16,29 +10,38 @@ export interface ApiErrorPayload {
   [key: string]: unknown;
 }
 
-const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
+// Codes that always map to an actionable CLI message, even when the backend
+// sends its own (Spanish-first) message.
+const OVERRIDE_MESSAGES: Record<string, string> = {
+  CLI_READ_ONLY:
+    "Your CLI token is read-only. Re-link with full access from the app to use write commands.",
+  CLI_FORBIDDEN_ENDPOINT: "This endpoint is not available from the CLI.",
+};
+
+// Fallbacks used only when the backend response carries no message. Plan
+// limits and prices are backend-owned; never hardcode numbers here.
+const FALLBACK_MESSAGES: Record<string, string> = {
   AI_PLAN_REQUIRED:
-    "Free plan includes 40 AI actions per month. Upgrade to Premium for 400 per month.",
+    "Your current plan does not include this AI feature. Check LucasApp for upgrade options.",
   AI_LIMIT_REACHED:
-    "Premium AI limit reached. Try again after your quota resets.",
-  SUBSCRIPTION_REQUIRED: "Subscriptions require Premium.",
+    "AI usage limit reached. Try again after your quota resets.",
+  SUBSCRIPTION_REQUIRED: "This feature requires Premium.",
   ACCOUNT_LIMIT_EXCEEDED:
-    "Free plan allows up to 3 active accounts. Upgrade to Premium for unlimited accounts.",
+    "Active account limit reached for your plan. Upgrade to add more accounts.",
 };
 
 export function getApiErrorCode(
   payload: ApiErrorPayload | string,
-): ApiErrorCode | null {
+): string | null {
   if (typeof payload === "string") return null;
 
-  const code =
+  return (
     payload.code ||
     payload.statusMessage ||
     payload.error?.code ||
-    payload.error?.statusMessage;
-
-  if (!code) return null;
-  return code in API_ERROR_MESSAGES ? (code as ApiErrorCode) : null;
+    payload.error?.statusMessage ||
+    null
+  );
 }
 
 export function getApiErrorMessage(
@@ -48,7 +51,11 @@ export function getApiErrorMessage(
   if (typeof payload === "string") return payload || fallback;
 
   const code = getApiErrorCode(payload);
-  if (code) return API_ERROR_MESSAGES[code];
+  if (code && code in OVERRIDE_MESSAGES) return OVERRIDE_MESSAGES[code];
 
-  return payload.message || payload.error?.message || fallback;
+  const backendMessage = payload.message || payload.error?.message;
+  if (backendMessage) return backendMessage;
+
+  if (code && code in FALLBACK_MESSAGES) return FALLBACK_MESSAGES[code];
+  return fallback;
 }

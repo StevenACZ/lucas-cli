@@ -1,22 +1,6 @@
-export interface LoanInstallmentLike {
-  id?: string;
-  sequence?: number;
-  dueDate: string;
-  dueAmount: number;
-  paidAmount: number;
-  lateFeeAdded?: number | null;
-  status: string;
-}
+import type { LoanDetails, LoanInstallment } from "./types.js";
 
-export interface LoanDetailsLike {
-  id?: string;
-  currency?: string;
-  installments: LoanInstallmentLike[];
-}
-
-export function getInstallmentRemaining(
-  installment: LoanInstallmentLike,
-): number {
+export function getInstallmentRemaining(installment: LoanInstallment): number {
   return Math.max(
     0,
     installment.dueAmount +
@@ -25,14 +9,14 @@ export function getInstallmentRemaining(
   );
 }
 
-export function getLoanRemaining(loan: LoanDetailsLike): number {
+export function getLoanRemaining(loan: LoanDetails): number {
   return loan.installments.reduce(
     (total, installment) => total + getInstallmentRemaining(installment),
     0,
   );
 }
 
-export function findNextPayableInstallment(loan: LoanDetailsLike) {
+export function findNextPayableInstallment(loan: LoanDetails) {
   return [...loan.installments]
     .filter((item) => !["PAID", "CANCELED"].includes(item.status))
     .filter((item) => getInstallmentRemaining(item) > 0.01)

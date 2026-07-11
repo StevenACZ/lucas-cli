@@ -8,7 +8,11 @@ export const createSubscriptionCommand = new Command("create")
   .requiredOption("--name <name>", "Subscription name")
   .requiredOption("--amount <amount>", "Subscription amount")
   .requiredOption("--frequency <freq>", "Frequency (MONTHLY|YEARLY)")
-  .requiredOption("--billing-day <day>", "Billing day of the month")
+  .requiredOption("--billing-day <day>", "Billing day of the month (due day)")
+  .option(
+    "--payment-start-day <day>",
+    "Day the payment window opens (1..31; omit to allow paying only on the due day)",
+  )
   .option("--account-id <id>", "Account ID")
   .option("--currency <code>", "Currency code")
   .option("--billing-month <month>", "Billing month (for YEARLY)")
@@ -32,6 +36,7 @@ export const createSubscriptionCommand = new Command("create")
       { opt: "amount", body: "amount", type: "number" },
       { opt: "frequency", body: "frequency" },
       { opt: "billingDay", body: "billingDay", type: "number" },
+      { opt: "paymentStartDay", body: "paymentStartDay", type: "number" },
       { opt: "accountId", body: "accountId" },
       { opt: "currency", body: "currency" },
       { opt: "billingMonth", body: "billingMonth", type: "number" },

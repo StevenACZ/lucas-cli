@@ -11,6 +11,8 @@ export interface CreateAccountOptions {
   balance?: string;
   creditLimit?: string;
   statementClosingDay?: string;
+  cashbackEnabled?: boolean;
+  cashbackRate?: string;
   color?: string;
   icon?: string;
 }
@@ -47,6 +49,10 @@ export function buildCreateAccountBody(
     }
     body.statementClosingDay = day;
   }
+  if (opts.cashbackEnabled !== undefined)
+    body.cashbackEnabled = opts.cashbackEnabled;
+  if (opts.cashbackRate !== undefined)
+    body.cashbackRate = parseFiniteNumber(opts.cashbackRate, "--cashback-rate");
   return body;
 }
 
@@ -75,6 +81,11 @@ export const createAccountCommand = new Command("create")
   .option(
     "--statement-closing-day <day>",
     "Statement closing day (1..31, CREDIT only)",
+  )
+  .option("--cashback-enabled", "Enable cashback (CREDIT only)")
+  .option(
+    "--cashback-rate <pct>",
+    "Cashback rate percent per purchase (0.01..100, CREDIT only)",
   )
   .option("--color <color>", "Account color")
   .option("--icon <icon>", "Account icon")

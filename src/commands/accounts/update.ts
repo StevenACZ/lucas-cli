@@ -21,6 +21,13 @@ export const updateAccountCommand = new Command("update")
   .option("--clear-current-debt", "Clear current debt")
   .option("--statement-closing-day <day>", "Statement closing day")
   .option("--clear-statement-closing-day", "Clear statement closing day")
+  .option("--cashback-enabled", "Enable cashback (CREDIT only)")
+  .option("--no-cashback-enabled", "Disable cashback")
+  .option(
+    "--cashback-rate <pct>",
+    "Cashback rate percent per purchase (0.01..100, CREDIT only)",
+  )
+  .option("--clear-cashback-rate", "Clear cashback rate")
   .option("--display-order <n>", "Display order")
   .option("--excluded", "Exclude from totals")
   .option("--no-excluded", "Include in totals")
@@ -51,6 +58,13 @@ export const updateAccountCommand = new Command("update")
         body: "statementClosingDay",
         type: "number",
         clearOpt: "clearStatementClosingDay",
+      },
+      { opt: "cashbackEnabled", body: "cashbackEnabled", type: "boolean" },
+      {
+        opt: "cashbackRate",
+        body: "cashbackRate",
+        type: "number",
+        clearOpt: "clearCashbackRate",
       },
       { opt: "displayOrder", body: "displayOrder", type: "number" },
       { opt: "excluded", body: "excluded", type: "boolean" },

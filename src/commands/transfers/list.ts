@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
+import { compactParams } from "../../lib/query-params.js";
 import { output } from "../../lib/output.js";
 
 interface TransferListOptions {
@@ -10,10 +11,7 @@ interface TransferListOptions {
 export function buildTransferListParams(
   opts: TransferListOptions,
 ): Record<string, string> | undefined {
-  const params: Record<string, string> = {};
-  if (opts.limit) params.limit = opts.limit;
-  if (opts.offset) params.offset = opts.offset;
-  return Object.keys(params).length > 0 ? params : undefined;
+  return compactParams({ limit: opts.limit, offset: opts.offset });
 }
 
 export const listTransfersCommand = new Command("list")

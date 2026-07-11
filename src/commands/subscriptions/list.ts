@@ -1,15 +1,13 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
+import { compactParams } from "../../lib/query-params.js";
 import { output } from "../../lib/output.js";
+import { enrichSubscriptionsWithCharges } from "../../lib/subscription-enrichment.js";
 import {
-  enrichSubscriptionsWithCharges,
-  type SubscriptionChargeLike,
-  type SubscriptionLike,
-} from "../../lib/subscription-enrichment.js";
-
-interface SubscriptionPageResponse {
-  items?: unknown;
-}
+  extractItems,
+  type Subscription,
+  type SubscriptionCharge,
+} from "../../lib/types.js";
 
 interface SubscriptionListOptions {
   limit?: string;
@@ -19,32 +17,20 @@ interface SubscriptionListOptions {
   groupId?: string;
 }
 
-export function getSubscriptionItems(
-  response: SubscriptionLike[] | SubscriptionPageResponse,
-): SubscriptionLike[] | null {
-  if (Array.isArray(response)) return response;
-
-  if (
-    response &&
-    typeof response === "object" &&
-    Array.isArray(response.items)
-  ) {
-    return response.items as SubscriptionLike[];
-  }
-
-  return null;
+export function getSubscriptionItems(response: unknown): Subscription[] | null {
+  return extractItems<Subscription>(response);
 }
 
 export function buildSubscriptionListParams(
   opts: SubscriptionListOptions,
 ): Record<string, string> | undefined {
-  const params: Record<string, string> = {};
-  if (opts.limit) params.limit = opts.limit;
-  if (opts.offset) params.offset = opts.offset;
-  if (opts.frequency) params.frequency = opts.frequency;
-  if (opts.type) params.type = opts.type;
-  if (opts.groupId) params.groupId = opts.groupId;
-  return Object.keys(params).length > 0 ? params : undefined;
+  return compactParams({
+    limit: opts.limit,
+    offset: opts.offset,
+    frequency: opts.frequency,
+    type: opts.type,
+    groupId: opts.groupId,
+  });
 }
 
 export const listSubscriptionsCommand = new Command("list")
@@ -54,15 +40,24 @@ export const listSubscriptionsCommand = new Command("list")
   .option("--frequency <frequency>", "Filter by frequency (MONTHLY|YEARLY|ALL)")
   .option("--type <type>", "Filter by type (SUBSCRIPTION|SERVICE|ALL)")
   .option("--group-id <id>", "Filter by subscription group ID")
+  .addHelpText(
+    "after",
+    `
+Notes:
+  - Billing context (computedStatus, latest charge fields) is derived from
+    GET /api/subscription-charges, which returns at most the 100 newest
+    charges; very old charge history is not considered.
+`,
+  )
   .action(async (opts: SubscriptionListOptions) => {
     const [subscriptionsResponse, charges] = await Promise.all([
-      apiRequest<SubscriptionLike[] | SubscriptionPageResponse>(
+      apiRequest<unknown>(
         "GET",
         "/api/subscriptions",
         undefined,
         buildSubscriptionListParams(opts),
       ),
-      apiRequest<SubscriptionChargeLike[]>("GET", "/api/subscription-charges"),
+      apiRequest<SubscriptionCharge[]>("GET", "/api/subscription-charges"),
     ]);
     const subscriptions = getSubscriptionItems(subscriptionsResponse);
     if (!subscriptions) {

@@ -15,7 +15,12 @@ export const updateSubscriptionCommand = new Command("update")
   .option("--currency <code>", "Currency code")
   .option("--account-id <id>", "Account ID")
   .option("--clear-account-id", "Clear account ID")
-  .option("--billing-day <day>", "Billing day of the month")
+  .option("--billing-day <day>", "Billing day of the month (due day)")
+  .option("--payment-start-day <day>", "Day the payment window opens (1..31)")
+  .option(
+    "--clear-payment-start-day",
+    "Clear payment window (payable only on the due day)",
+  )
   .option("--billing-month <month>", "Billing month (for YEARLY)")
   .option("--icon <icon>", "Icon")
   .option("--clear-icon", "Clear icon")
@@ -57,6 +62,12 @@ export const updateSubscriptionCommand = new Command("update")
       { opt: "currency", body: "currency" },
       { opt: "accountId", body: "accountId", clearOpt: "clearAccountId" },
       { opt: "billingDay", body: "billingDay", type: "number" },
+      {
+        opt: "paymentStartDay",
+        body: "paymentStartDay",
+        type: "number",
+        clearOpt: "clearPaymentStartDay",
+      },
       { opt: "billingMonth", body: "billingMonth", type: "number" },
       { opt: "icon", body: "icon", clearOpt: "clearIcon" },
       { opt: "color", body: "color", clearOpt: "clearColor" },

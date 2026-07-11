@@ -1,8 +1,20 @@
 import { loadCredentials, getApiUrl } from "./config.js";
-import { getApiErrorMessage, type ApiErrorPayload } from "./api-errors.js";
+import {
+  getApiErrorCode,
+  getApiErrorMessage,
+  type ApiErrorPayload,
+} from "./api-errors.js";
 import { output } from "./output.js";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+
+const DEFAULT_TIMEOUT_MS = 30_000;
+// AI endpoints run model calls server-side and can legitimately take minutes.
+const AI_TIMEOUT_MS = 120_000;
+
+function requestTimeoutMs(path: string): number {
+  return path.startsWith("/api/ai/") ? AI_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+}
 
 async function readErrorPayload(
   res: Response,
@@ -48,22 +60,24 @@ function redactSensitiveFields(value: unknown): unknown {
 function buildSafeErrorDetails(
   payload: ApiErrorPayload | string,
   statusCode: number,
+  requestId?: string | null,
 ): Record<string, unknown> {
   if (typeof payload === "string") {
-    return { message: payload, statusCode };
+    return {
+      message: payload,
+      statusCode,
+      ...(requestId && { requestId }),
+    };
   }
 
-  const code =
-    payload.code ||
-    payload.statusMessage ||
-    payload.error?.code ||
-    payload.error?.statusMessage;
+  const code = getApiErrorCode(payload);
   const message = payload.message || payload.error?.message;
   const safeDetails: Record<string, unknown> = {
     ...(code && { code }),
     ...(message && { message }),
     ...("data" in payload && { data: redactSensitiveFields(payload.data) }),
     statusCode,
+    ...(requestId && { requestId }),
   };
 
   if (process.env.LUCAS_DEBUG === "1") {
@@ -84,7 +98,7 @@ export async function apiRequest<T>(
     output.error("Not authenticated. Run: lucas auth login");
   }
 
-  if (creds!.expiresAt && new Date(creds!.expiresAt) <= new Date()) {
+  if (creds.expiresAt && new Date(creds.expiresAt) <= new Date()) {
     output.error("Token expired. Run: lucas auth login");
   }
 
@@ -98,19 +112,31 @@ export async function apiRequest<T>(
   }
 
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${creds!.token}`,
+    Authorization: `Bearer ${creds.token}`,
     "Content-Type": "application/json",
   };
+
+  const timeoutMs = requestTimeoutMs(path);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   let res: Response;
   try {
     res = await fetch(url.toString(), {
       method,
       headers,
+      signal: controller.signal,
       ...(body && { body: JSON.stringify(body) }),
     });
-  } catch {
-    return output.error(
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      output.error(
+        `Request timed out after ${timeoutMs / 1000}s. Try again or check the API status.`,
+        504,
+        { code: "TIMEOUT", timeoutMs, statusCode: 504 },
+      );
+    }
+    output.error(
       `Cannot reach LucasApp API at ${apiUrl}. Check your connection or run: lucas auth login`,
       503,
       {
@@ -119,10 +145,37 @@ export async function apiRequest<T>(
         statusCode: 503,
       },
     );
+  } finally {
+    clearTimeout(timeout);
   }
 
+  const requestId = res.headers?.get("x-request-id");
+
   if (res.status === 401) {
-    output.error("Not authenticated. Run: lucas auth login", 401);
+    output.error("Not authenticated. Run: lucas auth login", 401, {
+      code: "UNAUTHORIZED",
+      statusCode: 401,
+      ...(requestId && { requestId }),
+    });
+  }
+
+  if (res.status === 429) {
+    const payload = await readErrorPayload(res);
+    const retryAfterHeader = res.headers?.get("retry-after");
+    const retryAfterSeconds = retryAfterHeader
+      ? Number.parseInt(retryAfterHeader, 10)
+      : undefined;
+    output.error(
+      retryAfterSeconds
+        ? `Rate limited. Retry in ${retryAfterSeconds}s.`
+        : "Rate limited. Retry later.",
+      429,
+      {
+        code: "RATE_LIMITED",
+        ...(Number.isFinite(retryAfterSeconds) && { retryAfterSeconds }),
+        ...buildSafeErrorDetails(payload, 429, requestId),
+      },
+    );
   }
 
   if (!res.ok) {
@@ -130,7 +183,7 @@ export async function apiRequest<T>(
     output.error(
       getApiErrorMessage(payload),
       res.status,
-      buildSafeErrorDetails(payload, res.status),
+      buildSafeErrorDetails(payload, res.status, requestId),
     );
   }
 

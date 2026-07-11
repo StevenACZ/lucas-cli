@@ -15,8 +15,10 @@ export const updateTransactionCommand = new Command("update")
   .option("--clear-category-id", "Clear category")
   .option("--notes <notes>", "Additional notes")
   .option("--clear-notes", "Clear notes")
-  .option("--merchant <merchant>", "Merchant name")
-  .option("--clear-merchant", "Clear merchant")
+  .option(
+    "--cashback-amount <amount>",
+    "Explicit cashback earned (CREDIT expenses with cashback enabled)",
+  )
   .action(async (id: string, opts) => {
     const body = buildBody(opts, [
       { opt: "description", body: "description" },
@@ -25,7 +27,7 @@ export const updateTransactionCommand = new Command("update")
       { opt: "date", body: "date" },
       { opt: "categoryId", body: "categoryId", clearOpt: "clearCategoryId" },
       { opt: "notes", body: "notes", clearOpt: "clearNotes" },
-      { opt: "merchant", body: "merchant", clearOpt: "clearMerchant" },
+      { opt: "cashbackAmount", body: "cashbackAmount", type: "number" },
     ]);
     const data = await apiRequest(
       "PUT",

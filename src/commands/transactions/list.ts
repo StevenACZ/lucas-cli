@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
+import { compactParams } from "../../lib/query-params.js";
 import { output } from "../../lib/output.js";
 
 interface TransactionListOptions {
@@ -22,20 +23,22 @@ interface TransactionListOptions {
 export function buildTransactionListParams(
   opts: TransactionListOptions,
 ): Record<string, string> {
-  const params: Record<string, string> = {};
-  if (opts.from) params.startDate = opts.from;
-  if (opts.to) params.endDate = opts.to;
-  if (opts.categoryId) params.categoryId = opts.categoryId;
-  if (opts.categoryIds) params.categoryIds = opts.categoryIds;
-  if (opts.accountId) params.accountId = opts.accountId;
-  if (opts.accountIds) params.accountIds = opts.accountIds;
-  if (opts.type) params.type = opts.type;
-  if (opts.search) params.searchText = opts.search;
-  if (opts.minAmount) params.minAmount = opts.minAmount;
-  if (opts.maxAmount) params.maxAmount = opts.maxAmount;
-  if (opts.offset ?? opts.skip) params.offset = opts.offset ?? opts.skip!;
-  if (opts.limit ?? opts.take) params.limit = opts.limit ?? opts.take!;
-  return params;
+  return (
+    compactParams({
+      startDate: opts.from,
+      endDate: opts.to,
+      categoryId: opts.categoryId,
+      categoryIds: opts.categoryIds,
+      accountId: opts.accountId,
+      accountIds: opts.accountIds,
+      type: opts.type,
+      searchText: opts.search,
+      minAmount: opts.minAmount,
+      maxAmount: opts.maxAmount,
+      offset: opts.offset ?? opts.skip,
+      limit: opts.limit ?? opts.take,
+    }) ?? {}
+  );
 }
 
 export const listTransactionsCommand = new Command("list")
@@ -47,7 +50,7 @@ export const listTransactionsCommand = new Command("list")
   .option("--account-id <id>", "Filter by account")
   .option("--account-ids <ids>", "Comma-separated account IDs")
   .option("--type <type>", "Filter by type (INCOME|EXPENSE)")
-  .option("--search <text>", "Search description, merchant, or notes")
+  .option("--search <text>", "Search description or notes")
   .option("--min-amount <amount>", "Minimum amount")
   .option("--max-amount <amount>", "Maximum amount")
   .option("--skip <n>", "Skip N records (alias for --offset)")

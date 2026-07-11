@@ -20,7 +20,7 @@ vi.mock("../../src/lib/output.js", () => ({
   },
 }));
 
-const { AI_IMAGE_LIMIT, PLAN_FEATURES, USER_PLANS, assertImageLimit } =
+const { AI_IMAGE_LIMIT, assertImageLimit } =
   await import("../../src/lib/ai-contract.js");
 const { runAIUsage } = await import("../../src/commands/ai/usage.js");
 const { runParseExpenses } =
@@ -56,16 +56,12 @@ describe("ai commands", () => {
     }
   });
 
-  it("exposes only FREE and PREMIUM plan copy", () => {
-    expect(USER_PLANS).toEqual(["FREE", "PREMIUM"]);
-    expect(PLAN_FEATURES.FREE).toContain("40 AI actions/month");
-    expect(PLAN_FEATURES.FREE).toContain("Max 3 active accounts");
-    expect(PLAN_FEATURES.FREE).toContain("Subscriptions blocked");
-    expect(PLAN_FEATURES.PREMIUM).toContain("Unlimited accounts");
-    expect(PLAN_FEATURES.PREMIUM).toContain("Subscriptions");
-    expect(PLAN_FEATURES.PREMIUM).toContain(
-      "AI limits: 80/day, 250/week, 400/month",
+  it("does not hardcode plan copy (plan limits are backend-owned)", async () => {
+    const aiContract = await readFile(
+      join(process.cwd(), "src/lib/ai-contract.ts"),
+      "utf8",
     );
+    expect(aiContract).not.toMatch(/PLAN_FEATURES|actions\/month|\$\d/);
   });
 
   it("keeps receipt image requests capped at 10 files", () => {
@@ -156,18 +152,14 @@ describe("ai commands", () => {
     expect(apiRequest).not.toHaveBeenCalled();
   });
 
-  it("does not ship retired chat or insights commands/endpoints", async () => {
+  it("does not ship retired chat commands/endpoints", async () => {
     const sourceFiles = await listFiles(join(process.cwd(), "src"));
     const matches: string[] = [];
 
     for (const file of sourceFiles) {
       if (!file.endsWith(".ts")) continue;
       const text = await readFile(file, "utf8");
-      if (
-        /chat-message|lucas-chat|Lucas Chat|ai\/insights|runInsights/i.test(
-          text,
-        )
-      ) {
+      if (/chat-message|lucas-chat|Lucas Chat/i.test(text)) {
         matches.push(relative(process.cwd(), file));
       }
     }

@@ -14,9 +14,22 @@ import { createAccountCommand } from "./commands/accounts/create.js";
 import { updateAccountCommand } from "./commands/accounts/update.js";
 import { deleteAccountCommand } from "./commands/accounts/delete.js";
 import { debtDetailCommand } from "./commands/accounts/debt-detail.js";
+import { payExpenseCommand } from "./commands/accounts/pay-expense.js";
+import { payExpensesCommand } from "./commands/accounts/pay-expenses.js";
+import {
+  cashbackAdjustCommand,
+  cashbackRedeemCommand,
+} from "./commands/accounts/cashback.js";
+import { accountsStatsCommand } from "./commands/accounts/stats.js";
+import { balanceHistoryCommand } from "./commands/accounts/balance-history.js";
+import {
+  archiveAccountCommand,
+  unarchiveAccountCommand,
+} from "./commands/accounts/archive.js";
 
 // Transactions
 import { listTransactionsCommand } from "./commands/transactions/list.js";
+import { getTransactionCommand } from "./commands/transactions/get.js";
 import { createTransactionCommand } from "./commands/transactions/create.js";
 import { updateTransactionCommand } from "./commands/transactions/update.js";
 import { deleteTransactionCommand } from "./commands/transactions/delete.js";
@@ -34,6 +47,7 @@ import { updateSubscriptionCommand } from "./commands/subscriptions/update.js";
 import { deleteSubscriptionCommand } from "./commands/subscriptions/delete.js";
 import { markPaidCommand } from "./commands/subscriptions/mark-paid.js";
 import { subscriptionCalendarCommand } from "./commands/subscriptions/calendar.js";
+import { subscriptionServicesCommand } from "./commands/subscriptions/services.js";
 import { subscriptionChargesCommand } from "./commands/subscription-charges/index.js";
 import { subscriptionGroupsCommand } from "./commands/subscription-groups/index.js";
 import { settingsCommand } from "./commands/settings/index.js";
@@ -49,6 +63,7 @@ import { deleteLoanCommand } from "./commands/loans/delete.js";
 
 // Stats
 import { summaryCommand } from "./commands/stats/summary.js";
+import { overviewCommand } from "./commands/stats/overview.js";
 import { monthlyCommand } from "./commands/stats/monthly.js";
 import { byCategoryCommand } from "./commands/stats/by-category.js";
 
@@ -57,11 +72,16 @@ import { listCategoriesCommand } from "./commands/categories/list.js";
 
 // Exchange rate
 import { convertCommand } from "./commands/exchange-rate/convert.js";
+import { bcrCommand } from "./commands/exchange-rate/bcr.js";
 
 // AI
 import { aiUsageCommand } from "./commands/ai/usage.js";
+import { aiInsightsCommand } from "./commands/ai/insights.js";
 import { parseExpensesCommand } from "./commands/ai/parse-expenses.js";
 import { parseExpensesImageCommand } from "./commands/ai/parse-expenses-image.js";
+
+// Trash
+import { trashCommand } from "./commands/trash/index.js";
 
 const program = new Command();
 
@@ -70,13 +90,13 @@ program
   .description("LucasApp CLI - Financial data management for AI agents")
   .version(CLI_VERSION);
 
-// Grupo: auth
+// Group: auth
 const auth = program.command("auth").description("Authentication commands");
 auth.addCommand(loginCommand);
 auth.addCommand(logoutCommand);
 auth.addCommand(statusCommand);
 
-// Grupo: accounts
+// Group: accounts
 const accounts = program
   .command("accounts")
   .description("Manage financial accounts");
@@ -85,24 +105,33 @@ accounts.addCommand(createAccountCommand);
 accounts.addCommand(updateAccountCommand);
 accounts.addCommand(deleteAccountCommand);
 accounts.addCommand(debtDetailCommand);
+accounts.addCommand(payExpenseCommand);
+accounts.addCommand(payExpensesCommand);
+accounts.addCommand(cashbackRedeemCommand);
+accounts.addCommand(cashbackAdjustCommand);
+accounts.addCommand(accountsStatsCommand);
+accounts.addCommand(balanceHistoryCommand);
+accounts.addCommand(archiveAccountCommand);
+accounts.addCommand(unarchiveAccountCommand);
 
-// Grupo: transactions
+// Group: transactions
 const transactions = program
   .command("transactions")
   .description("Manage transactions");
 transactions.addCommand(listTransactionsCommand);
+transactions.addCommand(getTransactionCommand);
 transactions.addCommand(createTransactionCommand);
 transactions.addCommand(updateTransactionCommand);
 transactions.addCommand(deleteTransactionCommand);
 
-// Grupo: transfers
+// Group: transfers
 const transfers = program.command("transfers").description("Manage transfers");
 transfers.addCommand(listTransfersCommand);
 transfers.addCommand(createTransferCommand);
 transfers.addCommand(updateTransferCommand);
 transfers.addCommand(deleteTransferCommand);
 
-// Grupo: subscriptions
+// Group: subscriptions
 const subscriptions = program
   .command("subscriptions")
   .description("Manage subscriptions");
@@ -112,12 +141,13 @@ subscriptions.addCommand(updateSubscriptionCommand);
 subscriptions.addCommand(deleteSubscriptionCommand);
 subscriptions.addCommand(markPaidCommand);
 subscriptions.addCommand(subscriptionCalendarCommand);
+subscriptions.addCommand(subscriptionServicesCommand);
 
 program.addCommand(subscriptionGroupsCommand);
 program.addCommand(subscriptionChargesCommand);
 program.addCommand(settingsCommand);
 
-// Grupo: loans
+// Group: loans
 const loans = program.command("loans").description("Manage loans");
 loans.addCommand(listLoansCommand);
 loans.addCommand(createLoanCommand);
@@ -127,27 +157,43 @@ loans.addCommand(markPaidLoanCommand);
 loans.addCommand(unmarkPaidLoanCommand);
 loans.addCommand(deleteLoanCommand);
 
-// Grupo: stats
+// Group: stats
 const stats = program.command("stats").description("Financial statistics");
 stats.addCommand(summaryCommand);
+stats.addCommand(overviewCommand);
 stats.addCommand(monthlyCommand);
 stats.addCommand(byCategoryCommand);
 
-// Grupo: categories
+// Group: categories
 const categories = program.command("categories").description("View categories");
 categories.addCommand(listCategoriesCommand);
 
-// Grupo: exchange-rate
+// Group: exchange-rate
 const exchangeRate = program
   .command("exchange-rate")
   .description("Currency exchange");
 exchangeRate.addCommand(convertCommand);
+exchangeRate.addCommand(bcrCommand);
 
-// Grupo: ai
+// Group: ai
 const ai = program.command("ai").description("LucasApp AI tools");
 ai.addCommand(aiUsageCommand);
+ai.addCommand(aiInsightsCommand);
 ai.addCommand(parseExpensesCommand);
 ai.addCommand(parseExpensesImageCommand);
+
+// Group: trash
+program.addCommand(trashCommand);
+
+// Group: investments (experimental; backend gates it behind the same flag)
+if (process.env.LUCAS_INVESTMENTS === "1") {
+  const { investmentsCommand } =
+    await import("./commands/investments/index.js");
+  investmentsCommand.description(
+    "Manage investment accounts, positions, trades, and catalog (EXPERIMENTAL; requires LUCAS_INVESTMENTS=1 and a backend with investments enabled)",
+  );
+  program.addCommand(investmentsCommand);
+}
 
 await maybeNotifyForUpdate(CLI_VERSION);
 await program.parseAsync(process.argv);

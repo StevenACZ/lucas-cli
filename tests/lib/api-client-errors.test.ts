@@ -10,7 +10,8 @@ vi.mock("../../src/lib/config.js", () => ({
     token: "token",
     apiUrl: "https://example.test",
     deviceName: "test",
-    expiresAt: "2999-01-01T00:00:00.000Z",
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    scope: "FULL",
   }),
 }));
 
@@ -21,6 +22,12 @@ vi.mock("../../src/lib/output.js", () => ({
 }));
 
 const { apiRequest } = await import("../../src/lib/api-client.js");
+
+function headersOf(entries: Record<string, string>) {
+  return {
+    get: (key: string) => entries[key.toLowerCase()] ?? null,
+  };
+}
 
 describe("apiRequest backend error codes", () => {
   const originalDebug = process.env.LUCAS_DEBUG;
@@ -38,7 +45,7 @@ describe("apiRequest backend error codes", () => {
     }
   });
 
-  it("maps AI_PLAN_REQUIRED to a CLI-friendly message", async () => {
+  it("passes backend error messages through instead of hardcoded plan copy", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
@@ -56,16 +63,48 @@ describe("apiRequest backend error codes", () => {
     );
 
     await expect(apiRequest("GET", "/api/ai/usage")).rejects.toThrow(
-      "Free plan includes 40 AI actions per month. Upgrade to Premium for 400 per month.",
+      "raw backend message",
     );
-    expect(outputError).toHaveBeenCalledWith(
-      "Free plan includes 40 AI actions per month. Upgrade to Premium for 400 per month.",
-      403,
-      {
-        code: "AI_PLAN_REQUIRED",
-        message: "raw backend message",
-        statusCode: 403,
-      },
+    expect(outputError).toHaveBeenCalledWith("raw backend message", 403, {
+      code: "AI_PLAN_REQUIRED",
+      message: "raw backend message",
+      statusCode: 403,
+    });
+  });
+
+  it("maps CLI_READ_ONLY to an actionable message even when the backend sends its own", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        status: 403,
+        json: async () => ({
+          code: "CLI_READ_ONLY",
+          message: "Token de solo lectura",
+        }),
+      })),
+    );
+
+    await expect(apiRequest("POST", "/api/transactions", {})).rejects.toThrow(
+      "Your CLI token is read-only. Re-link with full access from the app to use write commands.",
+    );
+  });
+
+  it("maps CLI_FORBIDDEN_ENDPOINT to an actionable message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        status: 403,
+        json: async () => ({
+          code: "CLI_FORBIDDEN_ENDPOINT",
+          message: "Endpoint no disponible",
+        }),
+      })),
+    );
+
+    await expect(apiRequest("GET", "/api/devices")).rejects.toThrow(
+      "This endpoint is not available from the CLI.",
     );
   });
 
@@ -140,6 +179,86 @@ describe("apiRequest backend error codes", () => {
     });
   });
 
+  it("exposes the backend x-request-id in error details", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        status: 404,
+        headers: headersOf({ "x-request-id": "req-abc-123" }),
+        json: async () => ({
+          code: "RESOURCE_NOT_FOUND",
+          message: "No encontrado",
+        }),
+      })),
+    );
+
+    await expect(apiRequest("GET", "/api/accounts/nope")).rejects.toThrow(
+      "No encontrado",
+    );
+
+    expect(outputError).toHaveBeenCalledWith("No encontrado", 404, {
+      code: "RESOURCE_NOT_FOUND",
+      message: "No encontrado",
+      statusCode: 404,
+      requestId: "req-abc-123",
+    });
+  });
+
+  it("surfaces Retry-After and request id on 429 responses", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        status: 429,
+        headers: headersOf({
+          "retry-after": "30",
+          "x-request-id": "req-rate-1",
+        }),
+        json: async () => ({
+          message: "Demasiadas solicitudes",
+          data: { retryAfterSeconds: 30 },
+        }),
+      })),
+    );
+
+    await expect(apiRequest("GET", "/api/accounts")).rejects.toThrow(
+      "Rate limited. Retry in 30s.",
+    );
+
+    expect(outputError).toHaveBeenCalledWith(
+      "Rate limited. Retry in 30s.",
+      429,
+      expect.objectContaining({
+        code: "RATE_LIMITED",
+        retryAfterSeconds: 30,
+        requestId: "req-rate-1",
+        statusCode: 429,
+      }),
+    );
+  });
+
+  it("maps aborted requests to a structured timeout error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        const error = new Error("This operation was aborted");
+        error.name = "AbortError";
+        throw error;
+      }),
+    );
+
+    await expect(apiRequest("GET", "/api/accounts")).rejects.toThrow(
+      "Request timed out after 30s. Try again or check the API status.",
+    );
+
+    expect(outputError).toHaveBeenCalledWith(
+      "Request timed out after 30s. Try again or check the API status.",
+      504,
+      { code: "TIMEOUT", timeoutMs: 30000, statusCode: 504 },
+    );
+  });
+
   it("maps network failures to a CLI-friendly message", async () => {
     vi.stubGlobal(
       "fetch",
@@ -165,26 +284,33 @@ describe("apiRequest backend error codes", () => {
 
   it.each([
     [
-      "AI_LIMIT_REACHED",
-      "Premium AI limit reached. Try again after your quota resets.",
+      "AI_PLAN_REQUIRED",
+      "Your current plan does not include this AI feature. Check LucasApp for upgrade options.",
     ],
-    ["SUBSCRIPTION_REQUIRED", "Subscriptions require Premium."],
+    [
+      "AI_LIMIT_REACHED",
+      "AI usage limit reached. Try again after your quota resets.",
+    ],
+    ["SUBSCRIPTION_REQUIRED", "This feature requires Premium."],
     [
       "ACCOUNT_LIMIT_EXCEEDED",
-      "Free plan allows up to 3 active accounts. Upgrade to Premium for unlimited accounts.",
+      "Active account limit reached for your plan. Upgrade to add more accounts.",
     ],
-  ])("maps %s to a CLI-friendly message", async (code, message) => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => ({
-        ok: false,
-        status: 402,
-        json: async () => ({ statusMessage: code }),
-      })),
-    );
+  ])(
+    "falls back to neutral copy for %s when the backend sends no message",
+    async (code, message) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => ({
+          ok: false,
+          status: 402,
+          json: async () => ({ statusMessage: code }),
+        })),
+      );
 
-    await expect(apiRequest("GET", "/api/subscriptions")).rejects.toThrow(
-      message,
-    );
-  });
+      await expect(apiRequest("GET", "/api/subscriptions")).rejects.toThrow(
+        message,
+      );
+    },
+  );
 });

@@ -2,19 +2,7 @@ import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
 import { resourcePath } from "../../lib/resource-path.js";
-
-interface LoanPayment {
-  id: string;
-  paidAt: string;
-  payAmount: number;
-  loanAmount: number;
-  payCurrency: string;
-}
-
-interface LoanDetails {
-  id: string;
-  payments: LoanPayment[];
-}
+import type { LoanDetails } from "../../lib/types.js";
 
 export const unmarkPaidLoanCommand = new Command("unmark-paid")
   .description("Reverse a loan payment (default: most recent)")

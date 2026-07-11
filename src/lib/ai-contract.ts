@@ -2,25 +2,12 @@ import { lstat, readFile, stat } from "fs/promises";
 import { homedir } from "os";
 import { basename, extname, join, resolve, sep } from "path";
 
-export const USER_PLANS = ["FREE", "PREMIUM"] as const;
-export type UserPlan = (typeof USER_PLANS)[number];
+// Plan names, limits, and prices are backend-owned: the CLI passes backend
+// messages through instead of hardcoding plan copy.
 
 export const AI_IMAGE_LIMIT = 10;
 export const AI_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 const AI_IMAGE_TOTAL_MAX_BYTES = 25 * 1024 * 1024;
-
-export const PLAN_FEATURES: Record<UserPlan, string[]> = {
-  FREE: [
-    "40 AI actions/month",
-    "Max 3 active accounts",
-    "Subscriptions blocked",
-  ],
-  PREMIUM: [
-    "Unlimited accounts",
-    "Subscriptions",
-    "AI limits: 80/day, 250/week, 400/month",
-  ],
-};
 
 export interface AIImagePayload {
   base64: string;
@@ -34,10 +21,7 @@ export function assertImageLimit(images: ArrayLike<unknown>): void {
 }
 
 type SupportedImageMimeType =
-  | "image/jpeg"
-  | "image/png"
-  | "image/webp"
-  | "image/heic";
+  "image/jpeg" | "image/png" | "image/webp" | "image/heic";
 
 export function mimeTypeForPath(filePath: string): SupportedImageMimeType {
   switch (extname(filePath).toLowerCase()) {

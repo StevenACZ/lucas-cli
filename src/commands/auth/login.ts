@@ -1,87 +1,112 @@
 import { Command } from "commander";
 import { hostname } from "os";
-import { execFile } from "child_process";
-import { getApiUrl, saveCredentials } from "../../lib/config.js";
+import {
+  getApiUrl,
+  saveCredentials,
+  type DeviceScope,
+} from "../../lib/config.js";
+import { output } from "../../lib/output.js";
 
-function openBrowser(url: string): void {
-  const cmd = process.platform === "darwin" ? "open" : "xdg-open";
-  execFile(cmd, [url], () => {});
+const POLL_INTERVAL_MS = 3000;
+
+interface DeviceAuthStart {
+  deviceCode: string;
+  userCode: string;
+  expiresIn: number;
 }
 
-function write(text: string): void {
-  process.stderr.write(text);
+interface PollResponse {
+  status: "pending" | "approved" | "expired" | "denied";
+  token?: string;
+  scope?: DeviceScope;
+  expiresAt?: string;
+  expiresIn?: number;
 }
 
 function writeln(text: string): void {
   process.stderr.write(text + "\n");
 }
 
-function failApiConnection(apiUrl: string): never {
-  writeln(
-    `  \x1b[31m✗\x1b[0m Cannot reach LucasApp API at ${apiUrl}. Check your connection or use --api-url https://api.lucasapp.app`,
-  );
-  process.exit(1);
+function write(text: string): void {
+  process.stderr.write(text);
 }
 
 async function pollForApproval(
   apiUrl: string,
   deviceCode: string,
   deviceName: string,
-  pollIntervalMs = 3000,
-): Promise<void> {
-  const maxAttempts = 180;
-  write("\n  Waiting for authorization ");
+  pollIntervalMs: number,
+  expiresInSeconds: number,
+): Promise<never | void> {
+  const maxAttempts = Math.max(
+    1,
+    Math.ceil((expiresInSeconds * 1000) / pollIntervalMs),
+  );
+  write("\n  Waiting for approval ");
 
   for (let i = 0; i < maxAttempts; i++) {
     await new Promise((r) => setTimeout(r, pollIntervalMs));
     write(".");
 
+    let data: PollResponse;
     try {
       const res = await fetch(
         `${apiUrl}/api/cli/poll/${encodeURIComponent(deviceCode)}`,
       );
       if (!res.ok) continue;
-
-      const data = (await res.json()) as {
-        status: string;
-        token?: string;
-        expiresAt?: string;
-      };
-
-      if (data.status === "approved" && data.token) {
-        saveCredentials({
-          token: data.token,
-          apiUrl,
-          deviceName,
-          expiresAt: data.expiresAt ?? "",
-        });
-        writeln("\n");
-        writeln("  \x1b[32m✓\x1b[0m Authenticated successfully!");
-        writeln(`  \x1b[2mDevice: ${deviceName}\x1b[0m`);
-        writeln(
-          `  \x1b[2mExpires: ${new Date(data.expiresAt ?? "").toLocaleDateString()}\x1b[0m`,
-        );
-        writeln("");
-        return;
-      }
-
-      if (data.status === "expired") {
-        writeln("\n");
-        writeln("  \x1b[31m✗\x1b[0m Device code expired. Run again:");
-        writeln("    lucas auth login");
-        writeln("");
-        process.exit(1);
-      }
+      data = (await res.json()) as PollResponse;
     } catch {
       // Network error, keep polling
+      continue;
+    }
+
+    if (data.status === "approved" && data.token) {
+      const expiresAt = data.expiresAt ?? "";
+      const scope = data.scope ?? "READ_ONLY";
+      saveCredentials({
+        token: data.token,
+        apiUrl,
+        deviceName,
+        expiresAt,
+        scope,
+      });
+      writeln("\n");
+      writeln("  \x1b[32m✓\x1b[0m Authenticated successfully!");
+      writeln(`  \x1b[2mDevice: ${deviceName}\x1b[0m`);
+      writeln(`  \x1b[2mAccess: ${scope}\x1b[0m`);
+      writeln(
+        `  \x1b[2mExpires: ${new Date(expiresAt).toLocaleDateString()}\x1b[0m`,
+      );
+      writeln("");
+      output.success({ deviceName, scope, expiresAt });
+      return;
+    }
+
+    if (data.status === "denied") {
+      writeln("\n");
+      output.error(
+        "Access request was denied from the app. Run `lucas auth login` to request a new code.",
+        403,
+        { code: "DEVICE_DENIED" },
+      );
+    }
+
+    if (data.status === "expired") {
+      writeln("\n");
+      output.error(
+        "Device code expired before it was approved. Run `lucas auth login` to get a new code.",
+        410,
+        { code: "DEVICE_CODE_EXPIRED" },
+      );
     }
   }
 
   writeln("\n");
-  writeln("  \x1b[31m✗\x1b[0m Polling timed out. Run again:");
-  writeln("    lucas auth login");
-  writeln("");
-  process.exit(1);
+  output.error(
+    "Device code expired before it was approved. Run `lucas auth login` to get a new code.",
+    410,
+    { code: "DEVICE_CODE_EXPIRED" },
+  );
 }
 
 interface RunLoginOptions {
@@ -102,36 +127,55 @@ export async function runLogin(opts: RunLoginOptions = {}): Promise<void> {
       body: JSON.stringify({ deviceName }),
     });
   } catch {
-    failApiConnection(apiUrl);
+    output.error(
+      `Cannot reach LucasApp API at ${apiUrl}. Check your connection or use --api-url https://api.lucasapp.app`,
+      503,
+      { code: "NETWORK_ERROR", apiUrl },
+    );
   }
 
   if (!res.ok) {
-    failApiConnection(apiUrl);
+    output.error(
+      `Cannot reach LucasApp API at ${apiUrl}. Check your connection or use --api-url https://api.lucasapp.app`,
+      res.status,
+      { code: "DEVICE_AUTH_FAILED", statusCode: res.status },
+    );
   }
 
-  const { deviceCode, userCode, verifyUrl } = (await res.json()) as {
-    deviceCode: string;
-    userCode?: string;
-    verifyUrl: string;
-  };
-  const displayCode = userCode ?? deviceCode;
+  const { deviceCode, userCode, expiresIn } =
+    (await res.json()) as DeviceAuthStart;
 
+  const codeLine = `  ${userCode}  `;
+  const border = "─".repeat(codeLine.length);
   writeln("");
-  writeln("  \x1b[1mLucasApp CLI\x1b[0m — Device Authorization");
+  writeln("  \x1b[1mLucasApp CLI\x1b[0m — Link this device");
   writeln("");
-  writeln(`  Your code: \x1b[1;36m${displayCode}\x1b[0m`);
+  writeln(`  ┌${border}┐`);
+  writeln(`  │${" ".repeat(codeLine.length)}│`);
+  writeln(`  │  \x1b[1;36m${userCode}\x1b[0m  │`);
+  writeln(`  │${" ".repeat(codeLine.length)}│`);
+  writeln(`  └${border}┘`);
   writeln("");
-  writeln("  \x1b[2mOpening browser...\x1b[0m");
   writeln(
-    `  \x1b[2mIf it didn't open, visit:\x1b[0m \x1b[4m${verifyUrl}\x1b[0m`,
+    "  Open LucasApp on your iPhone → Settings → Security → CLI Access →",
+  );
+  writeln("  enter this code.");
+  writeln("");
+  writeln(
+    "  \x1b[2mYou choose the access level (read-only or full) in the app.\x1b[0m",
   );
 
-  openBrowser(verifyUrl);
-  await pollForApproval(apiUrl, deviceCode, deviceName, opts.pollIntervalMs);
+  await pollForApproval(
+    apiUrl,
+    deviceCode,
+    deviceName,
+    opts.pollIntervalMs ?? POLL_INTERVAL_MS,
+    expiresIn ?? 900,
+  );
 }
 
 export const loginCommand = new Command("login")
-  .description("Authenticate with LucasApp")
+  .description("Link this device to your LucasApp account (approved in-app)")
   .option("--api-url <url>", "API base URL")
   .option("--device-name <name>", "Device name", `${hostname()} - CLI`)
   .action(async (opts) => {
