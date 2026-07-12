@@ -29,10 +29,24 @@ export function normalizeApiUrl(apiUrl: string): string {
   return apiUrl.trim().replace(/\/+$/, "");
 }
 
+let warnedApiUrlOverride = false;
+
 export function getApiUrl(creds?: Pick<Credentials, "apiUrl"> | null): string {
-  return normalizeApiUrl(
-    process.env.LUCAS_API_URL ?? creds?.apiUrl ?? DEFAULT_API_URL,
-  );
+  const envUrl = process.env.LUCAS_API_URL;
+  if (
+    envUrl &&
+    creds?.apiUrl &&
+    normalizeApiUrl(envUrl) !== normalizeApiUrl(creds.apiUrl) &&
+    !warnedApiUrlOverride
+  ) {
+    // The stored token was issued by creds.apiUrl; sending it elsewhere is
+    // almost always a mistake (or an exfiltration attempt via env).
+    warnedApiUrlOverride = true;
+    process.stderr.write(
+      `Warning: LUCAS_API_URL overrides the API these credentials were issued for (${creds.apiUrl}). Run \`lucas auth login\` against the new API if this is intentional.\n`,
+    );
+  }
+  return normalizeApiUrl(envUrl ?? creds?.apiUrl ?? DEFAULT_API_URL);
 }
 
 export function ensureConfigDir(): void {

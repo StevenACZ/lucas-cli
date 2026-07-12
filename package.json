@@ -17,6 +17,7 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target node",
+    "prepack": "bun run build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "bunx typescript@7.0.2 --noEmit",

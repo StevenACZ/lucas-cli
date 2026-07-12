@@ -127,7 +127,8 @@ List commands are intentionally agent-friendly:
   `{ "ok": true, "data": ... }` on stdout for success, or
   `{ "ok": false, "error": { message, statusCode?, details? } }` on stderr for
   failures. Human-readable progress (for example during `auth login`) goes to
-  stderr only.
+  stderr only. Exception: argument-parsing errors (unknown flag, missing
+  required option) print commander's plain-text usage message on stderr.
 - Exit code is `0` on success and `1` on any failure — parse the error
   envelope for the reason. `error.details` carries the backend error `code`,
   the response `requestId` (`x-request-id`), and `retryAfterSeconds` on rate

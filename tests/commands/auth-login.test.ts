@@ -72,6 +72,7 @@ describe("auth login (device-auth v2)", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
       "https://api.lucasapp.app/api/cli/poll/secret-poll-code",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     const stderr = stderrWrite.mock.calls.map((call) => call[0]).join("");
     expect(stderr).toContain("ABCD-2345");

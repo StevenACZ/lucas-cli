@@ -190,7 +190,7 @@ describe("investments commands", () => {
         monthly_log: [
           {
             month: "2026-04-01",
-            deposit_received: 399.99,
+            deposit_received: 500,
             notes: "Initial deposit",
           },
         ],
@@ -198,29 +198,29 @@ describe("investments commands", () => {
           {
             event_date: "2026-05-15",
             ticker: "AAPL",
-            net_amount: 0.03,
+            net_amount: 1.25,
           },
         ],
         transactions: [
           {
-            trade_date: "2026-04-13",
+            trade_date: "2026-04-01",
             ticker: "VOO",
-            quantity: 0.07013,
-            price_per_share: 627.406246,
-            fee: 0.15,
-            tax_lot_id: "20260413-VOO-001",
+            quantity: 1.5,
+            price_per_share: 500,
+            fee: 0.25,
+            tax_lot_id: "20260401-VOO-001",
           },
         ],
         v6_execution_log: [
           {
             trade_date: "2026-05-26",
             trade_time: "10:37",
-            ticker: "RSP",
+            ticker: "SPY",
             action: "Sell",
-            quantity: 0.44151,
-            execution_price: 207.47,
-            clearing_fee: 0.15,
-            regulatory_fees: 0.02,
+            quantity: 2,
+            execution_price: 100,
+            clearing_fee: 0.1,
+            regulatory_fees: 0.05,
           },
         ],
       },
@@ -235,10 +235,10 @@ describe("investments commands", () => {
         { externalId: "dividend:2026-05-15:AAPL", type: "DIVIDEND" },
       ],
       trades: [
-        { externalId: "20260413-VOO-001", symbol: "VOO", side: "BUY" },
+        { externalId: "20260401-VOO-001", symbol: "VOO", side: "BUY" },
         {
-          externalId: "sell:2026-05-26:10:37:RSP",
-          symbol: "RSP",
+          externalId: "sell:2026-05-26:10:37:SPY",
+          symbol: "SPY",
           side: "SELL",
         },
       ],
@@ -252,16 +252,16 @@ describe("investments commands", () => {
           {
             event_date: "2026-05-15",
             ticker: "AAPL",
-            net_amount: 0.03,
+            net_amount: 1.25,
           },
         ],
         transactions: [
           {
-            trade_date: "2026-04-13",
+            trade_date: "2026-04-01",
             ticker: "VOO",
-            quantity: 0.07013,
-            price_per_share: 627.406246,
-            tax_lot_id: "20260413-VOO-001",
+            quantity: 1.5,
+            price_per_share: 500,
+            tax_lot_id: "20260401-VOO-001",
           },
         ],
       },
@@ -275,7 +275,7 @@ describe("investments commands", () => {
       cashAdjustments: [
         { externalId: "dividend:2026-05-15:AAPL", instrumentId: "inst-aapl" },
       ],
-      trades: [{ externalId: "20260413-VOO-001", instrumentId: "inst-voo" }],
+      trades: [{ externalId: "20260401-VOO-001", instrumentId: "inst-voo" }],
     });
   });
 
@@ -285,23 +285,23 @@ describe("investments commands", () => {
         tax_lots: [
           {
             sale_date: "2026-05-26",
-            ticker: "SCCO",
-            qty_sold: 0.09701,
+            ticker: "MSFT",
+            qty_sold: 0.25,
           },
           {
             sale_date: "2026-05-26",
-            ticker: "SCCO",
-            qty_sold: 0.11107,
+            ticker: "MSFT",
+            qty_sold: 0.5,
           },
         ],
         v6_execution_log: [
           {
             trade_date: "2026-05-26",
-            ticker: "SCCO",
+            ticker: "MSFT",
             action: "Sell",
-            quantity: 0.21016,
-            execution_price: 185.86,
-            gross_amount: 39.06,
+            quantity: 0.76,
+            execution_price: 200,
+            gross_amount: 150,
           },
         ],
       },
@@ -311,11 +311,11 @@ describe("investments commands", () => {
     expect(payload).toMatchObject({
       trades: [
         {
-          externalId: "sell:2026-05-26:00:00:SCCO",
-          symbol: "SCCO",
+          externalId: "sell:2026-05-26:00:00:MSFT",
+          symbol: "MSFT",
           side: "SELL",
-          quantity: 0.20808,
-          price: 39.06 / 0.20808,
+          quantity: 0.75,
+          price: 150 / 0.75,
         },
       ],
     });

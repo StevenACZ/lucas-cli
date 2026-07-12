@@ -18,6 +18,7 @@ export async function runLogout(): Promise<void> {
         Authorization: `Bearer ${creds.token}`,
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(10_000),
     }).catch(() => null);
     revoked = response?.ok ?? false;
   }

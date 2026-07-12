@@ -52,11 +52,20 @@ async function pollForApproval(
     try {
       const res = await fetch(
         `${apiUrl}/api/cli/poll/${encodeURIComponent(deviceCode)}`,
+        { signal: AbortSignal.timeout(10_000) },
       );
+      if (res.status === 404 || res.status === 410) {
+        writeln("\n");
+        output.error(
+          "Device code is no longer valid. Run `lucas auth login` to get a new code.",
+          res.status,
+          { code: "DEVICE_CODE_NOT_FOUND" },
+        );
+      }
       if (!res.ok) continue;
       data = (await res.json()) as PollResponse;
     } catch {
-      // Network error, keep polling
+      // Network error or timeout, keep polling
       continue;
     }
 
@@ -125,6 +134,7 @@ export async function runLogin(opts: RunLoginOptions = {}): Promise<void> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ deviceName }),
+      signal: AbortSignal.timeout(10_000),
     });
   } catch {
     output.error(
@@ -142,8 +152,24 @@ export async function runLogin(opts: RunLoginOptions = {}): Promise<void> {
     );
   }
 
-  const { deviceCode, userCode, expiresIn } =
-    (await res.json()) as DeviceAuthStart;
+  let start: DeviceAuthStart;
+  try {
+    start = (await res.json()) as DeviceAuthStart;
+  } catch {
+    output.error(
+      `LucasApp API at ${apiUrl} returned an unexpected response. Try again later.`,
+      502,
+      { code: "DEVICE_AUTH_FAILED" },
+    );
+  }
+  const { deviceCode, userCode, expiresIn } = start;
+  if (typeof deviceCode !== "string" || typeof userCode !== "string") {
+    output.error(
+      `LucasApp API at ${apiUrl} returned an unexpected response. Try again later.`,
+      502,
+      { code: "DEVICE_AUTH_FAILED" },
+    );
+  }
 
   const codeLine = `  ${userCode}  `;
   const border = "─".repeat(codeLine.length);

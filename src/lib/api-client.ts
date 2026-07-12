@@ -171,9 +171,9 @@ export async function apiRequest<T>(
         : "Rate limited. Retry later.",
       429,
       {
+        ...buildSafeErrorDetails(payload, 429, requestId),
         code: "RATE_LIMITED",
         ...(Number.isFinite(retryAfterSeconds) && { retryAfterSeconds }),
-        ...buildSafeErrorDetails(payload, 429, requestId),
       },
     );
   }

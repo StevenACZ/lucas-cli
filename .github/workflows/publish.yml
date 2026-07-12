@@ -13,6 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      - name: Verify release tag matches package version
+        run: |
+          pkg_version="$(bun -p 'require("./package.json").version')"
+          if [ "${GITHUB_REF_NAME#v}" != "$pkg_version" ]; then
+            echo "Release tag $GITHUB_REF_NAME does not match package.json version $pkg_version" >&2
+            exit 1
+          fi
       - run: bun install --frozen-lockfile
       - run: bun run format:check
       - run: bun run typecheck
