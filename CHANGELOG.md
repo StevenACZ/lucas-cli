@@ -34,6 +34,15 @@ WEEK|MONTH|SIX_MONTHS|YEAR`, `--currency`, `--offset` for historical
 - API requests now time out (30s default, 120s for AI endpoints), expose the
   backend `x-request-id` in error details, and surface `Retry-After` on
   HTTP 429 as `retryAfterSeconds`.
+- `auth login`/`logout` requests time out after 10s, and the login poll fails
+  fast when the backend no longer recognizes the device code (404/410).
+- A stderr warning is printed when `LUCAS_API_URL` overrides the API the
+  stored credentials were issued for.
+
+### Fixed
+
+- `error.details.code` is always `RATE_LIMITED` on HTTP 429, even when the
+  backend payload carries its own error code.
 
 ### Changed
 
