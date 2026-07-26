@@ -20,8 +20,7 @@ export function assertImageLimit(images: ArrayLike<unknown>): void {
   }
 }
 
-type SupportedImageMimeType =
-  "image/jpeg" | "image/png" | "image/webp" | "image/heic";
+type SupportedImageMimeType = "image/jpeg" | "image/png" | "image/webp";
 
 export function mimeTypeForPath(filePath: string): SupportedImageMimeType {
   switch (extname(filePath).toLowerCase()) {
@@ -32,10 +31,13 @@ export function mimeTypeForPath(filePath: string): SupportedImageMimeType {
       return "image/png";
     case ".webp":
       return "image/webp";
+    // The API rejects HEIC after the AI quota has already been charged.
     case ".heic":
-      return "image/heic";
+      throw new Error(
+        "HEIC images are not supported. Convert the file to JPEG, PNG, or WebP first",
+      );
     default:
-      throw new Error("Only JPG, PNG, WebP, or HEIC images are supported");
+      throw new Error("Only JPG, PNG, or WebP images are supported");
   }
 }
 
@@ -101,13 +103,6 @@ function hasExpectedMagicBytes(
       bytes.length >= 12 &&
       bytes.subarray(0, 4).toString("ascii") === "RIFF" &&
       bytes.subarray(8, 12).toString("ascii") === "WEBP"
-    );
-  }
-
-  if (mimeType === "image/heic") {
-    const brand = bytes.subarray(4, 32).toString("ascii");
-    return (
-      brand.includes("ftyp") && /(heic|heix|hevc|hevx|mif1|msf1)/.test(brand)
     );
   }
 

@@ -53,6 +53,16 @@ describe("accounts cashback commands", () => {
     expect(apiRequest).not.toHaveBeenCalled();
   });
 
+  it("rejects a blank amount instead of sending 0", async () => {
+    await expect(
+      cashbackRedeemCommand.parseAsync(["acc_123", "--amount", ""], {
+        from: "user",
+      }),
+    ).rejects.toThrow("Invalid numeric value for --amount");
+
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+
   it("adjusts the cashback balance to a target value", async () => {
     apiRequest.mockResolvedValue({ success: true, cashbackBalance: 100 });
 

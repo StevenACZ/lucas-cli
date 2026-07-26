@@ -69,8 +69,12 @@ function loadUpdateCache(): UpdateCache | null {
 }
 
 function saveUpdateCache(cache: UpdateCache): void {
-  ensureConfigDir();
-  writeFileSync(UPDATE_CACHE_FILE, JSON.stringify(cache, null, 2));
+  try {
+    ensureConfigDir();
+    writeFileSync(UPDATE_CACHE_FILE, JSON.stringify(cache, null, 2));
+  } catch {
+    return;
+  }
 }
 
 async function fetchLatestVersion(): Promise<string | undefined> {
@@ -102,6 +106,15 @@ async function fetchLatestVersion(): Promise<string | undefined> {
 export async function maybeNotifyForUpdate(
   currentVersion: string,
 ): Promise<void> {
+  // An optional convenience notice must never be able to fail a CLI command.
+  try {
+    await runUpdateCheck(currentVersion);
+  } catch {
+    return;
+  }
+}
+
+async function runUpdateCheck(currentVersion: string): Promise<void> {
   if (!isInteractiveTerminal()) return;
 
   const cache = loadUpdateCache();

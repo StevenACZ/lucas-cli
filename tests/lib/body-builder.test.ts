@@ -43,4 +43,16 @@ describe("buildBody", () => {
       ]),
     ).toThrow("Invalid numeric value for --amount");
   });
+
+  it("rejects blank numeric values instead of writing 0", () => {
+    vi.spyOn(output, "error").mockImplementation((message) => {
+      throw new Error(message);
+    });
+
+    expect(() =>
+      buildBody({ balance: "" }, [
+        { opt: "balance", body: "balance", type: "number" },
+      ]),
+    ).toThrow("Invalid numeric value for --balance");
+  });
 });

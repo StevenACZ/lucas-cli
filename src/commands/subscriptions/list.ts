@@ -21,6 +21,18 @@ export function getSubscriptionItems(response: unknown): Subscription[] | null {
   return extractItems<Subscription>(response);
 }
 
+export function buildSubscriptionListPayload(
+  response: unknown,
+  charges: SubscriptionCharge[],
+): Record<string, unknown> | unknown[] | null {
+  const subscriptions = getSubscriptionItems(response);
+  if (!subscriptions) return null;
+
+  const items = enrichSubscriptionsWithCharges(subscriptions, charges);
+  if (Array.isArray(response)) return items;
+  return { ...(response as Record<string, unknown>), items };
+}
+
 export function buildSubscriptionListParams(
   opts: SubscriptionListOptions,
 ): Record<string, string> | undefined {
@@ -47,6 +59,9 @@ Notes:
   - Billing context (computedStatus, latest charge fields) is derived from
     GET /api/subscription-charges, which returns at most the 100 newest
     charges; very old charge history is not considered.
+  - computedStatus reflects the oldest unpaid charge, so an overdue charge is
+    still reported when a newer charge is already paid. It is UNKNOWN when the
+    subscription has no charge history at all.
 `,
   )
   .action(async (opts: SubscriptionListOptions) => {
@@ -59,11 +74,14 @@ Notes:
       ),
       apiRequest<SubscriptionCharge[]>("GET", "/api/subscription-charges"),
     ]);
-    const subscriptions = getSubscriptionItems(subscriptionsResponse);
-    if (!subscriptions) {
+    const payload = buildSubscriptionListPayload(
+      subscriptionsResponse,
+      charges,
+    );
+    if (!payload) {
       return output.error("Unexpected subscriptions response", 502, {
         code: "UNEXPECTED_RESPONSE",
       });
     }
-    output.success(enrichSubscriptionsWithCharges(subscriptions, charges));
+    output.success(payload);
   });

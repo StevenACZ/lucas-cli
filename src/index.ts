@@ -195,5 +195,5 @@ if (process.env.LUCAS_INVESTMENTS === "1") {
   program.addCommand(investmentsCommand);
 }
 
-await maybeNotifyForUpdate(CLI_VERSION);
 await program.parseAsync(process.argv);
+await maybeNotifyForUpdate(CLI_VERSION);
