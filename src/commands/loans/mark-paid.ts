@@ -58,13 +58,6 @@ export async function executeMarkPaidLoan(
 
 export async function runMarkPaidLoan(id: string, opts: MarkPaidLoanOptions) {
   const result = await executeMarkPaidLoan(id, opts);
-  if (result.verification && !result.verification.verified) {
-    output.error(
-      "Server state verification failed after mark-paid",
-      409,
-      result,
-    );
-  }
   output.success(result);
 }
 
@@ -76,5 +69,10 @@ export const markPaidLoanCommand = new Command("mark-paid")
   .option("--notes <notes>", "Payment notes")
   .option("--paid-at <date>", "Payment date (YYYY-MM-DD)")
   .option("--verified", "Re-read the loan after paying and verify server state")
-  .addHelpText("after", "\nExample:\n  lucas loans mark-paid <id> --verified\n")
+  .addHelpText(
+    "after",
+    "\nExample:\n  lucas loans mark-paid <id> --verified\n" +
+      "\nAn accepted payment always exits 0. Read data.verification.verified:\n" +
+      "true (checked), false (server state looks wrong), null (check failed).\n",
+  )
   .action(runMarkPaidLoan);
