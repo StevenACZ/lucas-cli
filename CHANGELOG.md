@@ -12,7 +12,9 @@ All notable changes to this project will be documented in this file.
   as `0`, so `lucas loans pay <id> --amount "$UNSET_VAR"` no longer posts a
   zero payment.
 - `subscriptions list` derives `computedStatus` from the oldest unpaid charge,
-  so an overdue charge is still reported when a newer charge is already paid.
+  so an overdue charge is still reported when a newer charge is already paid,
+  and answers `UNKNOWN` instead of `PAID_UP_TO_DATE` when the subscription has
+  no charge history at all.
 - `loans pay --verified` and `loans mark-paid --verified` keep an accepted
   payment when the post-payment re-read fails. The re-read no longer ends the
   process, so a persisted payment is never reported as a failure that invites a
