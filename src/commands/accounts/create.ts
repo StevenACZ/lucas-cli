@@ -32,7 +32,7 @@ export function buildCreateAccountBody(
     currency: opts.currency ?? "PEN",
   };
   if (opts.balance !== undefined)
-    body.balance = parseFiniteNumber(opts.balance, "--balance");
+    body.initialBalance = parseFiniteNumber(opts.balance, "--balance");
   if (opts.creditLimit !== undefined)
     body.creditLimit = parseFiniteNumber(opts.creditLimit, "--credit-limit");
   if (opts.color) body.color = opts.color;

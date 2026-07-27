@@ -2,6 +2,58 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- `accounts create --balance` sends `initialBalance`, the field the API
+  actually accepts; the opening balance used to be dropped silently.
+- Numeric flags reject an empty or whitespace-only value instead of reading it
+  as `0`, so `lucas loans pay <id> --amount "$UNSET_VAR"` no longer posts a
+  zero payment.
+- `subscriptions list` derives `computedStatus` from the oldest unpaid charge,
+  so an overdue charge is still reported when a newer charge is already paid,
+  and answers `UNKNOWN` instead of `PAID_UP_TO_DATE` when the subscription has
+  no charge history at all.
+- `loans pay --verified` and `loans mark-paid --verified` keep an accepted
+  payment when the post-payment re-read fails. The re-read no longer ends the
+  process, so a persisted payment is never reported as a failure that invites a
+  retry of a non-idempotent POST.
+- `auth status` no longer answers `authenticated: true` for a token that has
+  already expired.
+- The update notice can no longer fail a command: it runs after the command and
+  an unwritable cache directory is ignored.
+
+### Changed
+
+- **Breaking:** `subscriptions list` mirrors the backend envelope. When the API
+  answers `{ items, summary, pagination }`, `.data` is that object with the
+  enriched subscriptions in `.data.items`; a bare array response still returns a
+  bare array. In JS read `.data.items ?? .data`; with jq use
+  `.data | if type=="array" then . else .items end`, because jq hard-errors when
+  indexing an array with a string.
+- **Breaking:** `loans pay --verified` and `loans mark-paid --verified` exit `0`
+  when verification fails. An accepted payment is already persisted, so the
+  outcome is reported in the payload instead of the exit code:
+  `data.verification.verified` is `true`, `false` with a `reason`, or `null`
+  when the re-read could not answer. Both commands used to exit `1` with a 409
+  error envelope.
+- `loans mark-paid` reports `data.markedInstallment.remainingAfter` and
+  `fullyPaid`, so an installment left partially paid — for example when the
+  server materialises a late fee inside the same payment — is visible.
+  `remainingAmount` keeps reporting the amount that was paid.
+- Loan verification tolerates a late fee added by the server during the payment
+  and reports it as `data.verification.lateFeesAdded`.
+- `auth status` adds `expired` and derives `authenticated` from it.
+- `subscriptions list` `computedStatus` adds `UNKNOWN` for a subscription with
+  no charge history.
+
+### Removed
+
+- **Breaking:** `ai parse-expenses-image` no longer accepts HEIC. The API
+  accepts only JPEG, PNG, and WebP, so HEIC files are rejected locally; convert
+  them first.
+
 ## [0.7.0] - 2026-07-11
 
 ### Added

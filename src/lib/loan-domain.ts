@@ -16,6 +16,13 @@ export function getLoanRemaining(loan: LoanDetails): number {
   );
 }
 
+export function getLoanLateFees(loan: LoanDetails): number {
+  return loan.installments.reduce(
+    (total, installment) => total + (installment.lateFeeAdded ?? 0),
+    0,
+  );
+}
+
 export function findNextPayableInstallment(loan: LoanDetails) {
   return [...loan.installments]
     .filter((item) => !["PAID", "CANCELED"].includes(item.status))

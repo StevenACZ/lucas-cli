@@ -3,7 +3,7 @@ import {
   findNextPayableInstallment,
   getInstallmentRemaining,
 } from "../../lib/loan-domain.js";
-import type { LoanDetails } from "../../lib/types.js";
+import type { LoanDetails, LoanInstallment } from "../../lib/types.js";
 import { output } from "../../lib/output.js";
 import {
   executePayLoan,
@@ -19,6 +19,15 @@ export interface MarkPaidLoanOptions {
   notes?: string;
   paidAt?: string;
   verified?: boolean;
+}
+
+function summarizeSettlement(installment: LoanInstallment | undefined) {
+  if (!installment) return undefined;
+  const remainingAfter = getInstallmentRemaining(installment);
+  return {
+    remainingAfter,
+    fullyPaid: remainingAfter <= 0.01 && installment.status === "PAID",
+  };
 }
 
 export async function executeMarkPaidLoan(
@@ -44,6 +53,12 @@ export async function executeMarkPaidLoan(
     verified: opts.verified,
   };
   const result = await executePayLoan(id, payOpts);
+  const afterInstallment = result.loan?.installments.find((item) =>
+    installment.id !== undefined
+      ? item.id === installment.id
+      : installment.sequence !== undefined &&
+        item.sequence === installment.sequence,
+  );
   return {
     ...result,
     loanId: id,
@@ -52,19 +67,13 @@ export async function executeMarkPaidLoan(
       sequence: installment.sequence,
       dueDate: installment.dueDate,
       remainingAmount: payOpts.amount,
+      ...summarizeSettlement(afterInstallment),
     },
   };
 }
 
 export async function runMarkPaidLoan(id: string, opts: MarkPaidLoanOptions) {
   const result = await executeMarkPaidLoan(id, opts);
-  if (result.verification && !result.verification.verified) {
-    output.error(
-      "Server state verification failed after mark-paid",
-      409,
-      result,
-    );
-  }
   output.success(result);
 }
 
@@ -76,5 +85,13 @@ export const markPaidLoanCommand = new Command("mark-paid")
   .option("--notes <notes>", "Payment notes")
   .option("--paid-at <date>", "Payment date (YYYY-MM-DD)")
   .option("--verified", "Re-read the loan after paying and verify server state")
-  .addHelpText("after", "\nExample:\n  lucas loans mark-paid <id> --verified\n")
+  .addHelpText(
+    "after",
+    "\nExample:\n  lucas loans mark-paid <id> --verified\n" +
+      "\nAn accepted payment always exits 0. Read data.verification.verified:\n" +
+      "true (checked), false (server state looks wrong), null (check failed).\n" +
+      "\nRead data.markedInstallment.fullyPaid too: false means the installment\n" +
+      "still owes data.markedInstallment.remainingAfter, e.g. because the server\n" +
+      "added a late fee while applying this payment.\n",
+  )
   .action(runMarkPaidLoan);

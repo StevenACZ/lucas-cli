@@ -133,6 +133,11 @@ List commands are intentionally agent-friendly:
   envelope for the reason. `error.details` carries the backend error `code`,
   the response `requestId` (`x-request-id`), and `retryAfterSeconds` on rate
   limits (HTTP 429).
+- `loans pay --verified` and `loans mark-paid --verified` re-read the loan after
+  the payment is accepted. An accepted payment always exits `0`, so never retry
+  on the verification alone — read `data.verification.verified`: `true`
+  (checked), `false` (server state looks wrong, `reason` explains), `null` (the
+  re-read did not answer; the payment is still persisted).
 - Requests time out after 30s (120s for `ai` commands) with a structured
   `TIMEOUT` error.
 - A read-only token fails write commands with `CLI_READ_ONLY`; re-link with
@@ -165,9 +170,9 @@ Error:
 ## Security Notes
 
 - Do not pass arbitrary local files to agent-driven commands.
-- `parse-expenses-image` accepts only real JPG, PNG, WebP, or HEIC files and
-  rejects symlinks, suspicious credential paths, unsupported extensions, and
-  oversized images.
+- `parse-expenses-image` accepts only real JPG, PNG, or WebP files and rejects
+  symlinks, suspicious credential paths, unsupported extensions, and oversized
+  images. HEIC is rejected locally, before the AI quota is charged.
 - Resource IDs are validated before building API paths.
 - Backend error details are summarized by default. Set `LUCAS_DEBUG=1` only
   while debugging locally; sensitive fields are redacted.

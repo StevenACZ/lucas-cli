@@ -36,6 +36,19 @@ describe("accounts create", () => {
     });
   });
 
+  it("buildCreateAccountBody sends the opening balance as initialBalance", () => {
+    const body = buildCreateAccountBody({
+      name: "Savings",
+      type: "DEBIT",
+      bank: "BCP",
+      currency: "PEN",
+      balance: "500",
+    });
+
+    expect(body.initialBalance).toBe(500);
+    expect(body).not.toHaveProperty("balance");
+  });
+
   it("buildCreateAccountBody omits statementClosingDay for non-CREDIT", () => {
     const body = buildCreateAccountBody({
       name: "Savings",

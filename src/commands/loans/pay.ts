@@ -1,10 +1,11 @@
 import { Command } from "commander";
-import { apiRequest } from "../../lib/api-client.js";
+import { apiRequest, apiRequestOrThrow } from "../../lib/api-client.js";
 import { findNextPayableInstallment } from "../../lib/loan-domain.js";
 import type { LoanDetails } from "../../lib/types.js";
 import {
+  loanVerificationUnavailable,
   verifyLoanPayment,
-  type LoanVerificationResult,
+  type LoanVerificationOutcome,
 } from "../../lib/loan-verification.js";
 import {
   parseFiniteNumber,
@@ -27,7 +28,7 @@ export interface PayLoanOptions {
 export interface PayLoanExecutionResult {
   payment: unknown;
   loan?: LoanDetails;
-  verification?: LoanVerificationResult;
+  verification?: LoanVerificationOutcome;
 }
 
 export function buildPayLoanPayload(opts: PayLoanOptions) {
@@ -63,7 +64,14 @@ export async function executePayLoan(
     body,
   );
   if (!beforeLoan) return { payment };
-  const afterLoan = await apiRequest<LoanDetails>("GET", loanPath);
+  let afterLoan: LoanDetails;
+  try {
+    afterLoan = await apiRequestOrThrow<LoanDetails>("GET", loanPath);
+  } catch {
+    // The payment is already persisted; a failed re-read must never be
+    // reported as a failed payment or the caller retries a non-idempotent POST.
+    return { payment, verification: loanVerificationUnavailable() };
+  }
   const targetInstallment = findNextPayableInstallment(beforeLoan);
   const expectedLoanReduction =
     typeof body.loanAmount === "number"
@@ -85,9 +93,6 @@ export async function executePayLoan(
 
 export async function runPayLoan(id: string, opts: PayLoanOptions) {
   const result = await executePayLoan(id, opts);
-  if (result.verification && !result.verification.verified) {
-    output.error("Server state verification failed after payment", 409, result);
-  }
   output.success(result.verification ? result : result.payment);
 }
 
@@ -104,6 +109,8 @@ export const payLoanCommand = new Command("pay")
   .option("--verified", "Re-read the loan after paying and verify server state")
   .addHelpText(
     "after",
-    "\nExample:\n  lucas loans pay <id> --amount 750 --verified\n",
+    "\nExample:\n  lucas loans pay <id> --amount 750 --verified\n" +
+      "\nAn accepted payment always exits 0. Read data.verification.verified:\n" +
+      "true (checked), false (server state looks wrong), null (check failed).\n",
   )
   .action(runPayLoan);

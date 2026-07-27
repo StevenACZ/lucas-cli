@@ -15,8 +15,12 @@ export const statusCommand = new Command("status")
       output.error("Not authenticated. Run: lucas auth login");
     }
 
+    const expired =
+      Boolean(creds.expiresAt) && new Date(creds.expiresAt) <= new Date();
+
     const status = {
-      authenticated: true,
+      authenticated: !expired,
+      expired,
       apiUrl: getApiUrl(creds),
       deviceName: creds.deviceName,
       scope: creds.scope ?? null,

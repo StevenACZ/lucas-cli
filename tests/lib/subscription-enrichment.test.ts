@@ -31,6 +31,40 @@ describe("enrichSubscriptionsWithCharges", () => {
     );
   });
 
+  it("keeps reporting an older unpaid charge when a newer one is paid", () => {
+    const [subscription] = enrichSubscriptionsWithCharges(
+      [{ id: "sub_3", isActive: true, lastBilling: null }],
+      [
+        {
+          subscriptionId: "sub_3",
+          dueDate: "2026-07-01T12:00:00.000Z",
+          paidAt: null,
+          status: "OVERDUE",
+        },
+        {
+          subscriptionId: "sub_3",
+          dueDate: "2026-08-01T12:00:00.000Z",
+          paidAt: "2026-08-01T13:00:00.000Z",
+          status: "PAID",
+        },
+      ],
+      new Date("2026-08-02T10:00:00.000Z"),
+    );
+
+    expect(subscription.computedStatus).toBe("OVERDUE");
+  });
+
+  it("reports UNKNOWN when the subscription has no charge history", () => {
+    const [subscription] = enrichSubscriptionsWithCharges(
+      [{ id: "sub_4", isActive: true, lastBilling: null }],
+      [],
+      new Date("2026-08-02T10:00:00.000Z"),
+    );
+
+    expect(subscription.computedStatus).toBe("UNKNOWN");
+    expect(subscription.lastBillingExplanation).toBe("no_charge_history");
+  });
+
   it("uses the newest charge to expose lastChargeDate and latestChargeStatus", () => {
     const [subscription] = enrichSubscriptionsWithCharges(
       [

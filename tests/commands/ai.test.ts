@@ -20,7 +20,7 @@ vi.mock("../../src/lib/output.js", () => ({
   },
 }));
 
-const { AI_IMAGE_LIMIT, assertImageLimit } =
+const { AI_IMAGE_LIMIT, assertImageLimit, mimeTypeForPath } =
   await import("../../src/lib/ai-contract.js");
 const { runAIUsage } = await import("../../src/commands/ai/usage.js");
 const { runParseExpenses } =
@@ -70,6 +70,31 @@ describe("ai commands", () => {
     expect(() => assertImageLimit(Array.from({ length: 11 }))).toThrow(
       "Maximum 10 images per request",
     );
+  });
+
+  it("rejects HEIC receipts locally instead of spending an AI call", () => {
+    expect(() => mimeTypeForPath("receipt.HEIC")).toThrow(
+      /Convert the file to JPEG, PNG, or WebP first/,
+    );
+    expect(mimeTypeForPath("receipt.jpg")).toBe("image/jpeg");
+  });
+
+  it("does not send HEIC receipts to the backend", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "lucas-cli-ai-"));
+    const imagePath = join(tempDir, "receipt.heic");
+    await writeFile(
+      imagePath,
+      Buffer.concat([
+        Buffer.from([0x00, 0x00, 0x00, 0x20]),
+        Buffer.from("ftypheic", "ascii"),
+      ]),
+    );
+
+    await expect(runParseExpensesImage([imagePath], {})).rejects.toThrow(
+      /Convert the file to JPEG, PNG, or WebP first/,
+    );
+
+    expect(apiRequest).not.toHaveBeenCalled();
   });
 
   it("calls the AI usage endpoint and preserves usagePeriods", async () => {
