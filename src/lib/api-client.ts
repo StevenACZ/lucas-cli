@@ -87,19 +87,42 @@ function buildSafeErrorDetails(
   return safeDetails;
 }
 
-export async function apiRequest<T>(
+export class ApiError extends Error {
+  readonly statusCode?: number;
+  readonly details?: unknown;
+
+  constructor(message: string, statusCode?: number, details?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.statusCode = statusCode;
+    this.details = details;
+  }
+}
+
+type FailHandler = (
+  message: string,
+  statusCode?: number,
+  details?: unknown,
+) => never;
+
+const throwApiError: FailHandler = (message, statusCode, details) => {
+  throw new ApiError(message, statusCode, details);
+};
+
+async function performRequest<T>(
   method: HttpMethod,
   path: string,
-  body?: Record<string, unknown>,
-  queryParams?: Record<string, string>,
+  body: Record<string, unknown> | undefined,
+  queryParams: Record<string, string> | undefined,
+  fail: FailHandler,
 ): Promise<T> {
   const creds = loadCredentials();
   if (!creds) {
-    output.error("Not authenticated. Run: lucas auth login");
+    fail("Not authenticated. Run: lucas auth login");
   }
 
   if (creds.expiresAt && new Date(creds.expiresAt) <= new Date()) {
-    output.error("Token expired. Run: lucas auth login");
+    fail("Token expired. Run: lucas auth login");
   }
 
   const apiUrl = getApiUrl(creds);
@@ -130,13 +153,13 @@ export async function apiRequest<T>(
     });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      output.error(
+      fail(
         `Request timed out after ${timeoutMs / 1000}s. Try again or check the API status.`,
         504,
         { code: "TIMEOUT", timeoutMs, statusCode: 504 },
       );
     }
-    output.error(
+    fail(
       `Cannot reach LucasApp API at ${apiUrl}. Check your connection or run: lucas auth login`,
       503,
       {
@@ -152,7 +175,7 @@ export async function apiRequest<T>(
   const requestId = res.headers?.get("x-request-id");
 
   if (res.status === 401) {
-    output.error("Not authenticated. Run: lucas auth login", 401, {
+    fail("Not authenticated. Run: lucas auth login", 401, {
       code: "UNAUTHORIZED",
       statusCode: 401,
       ...(requestId && { requestId }),
@@ -165,7 +188,7 @@ export async function apiRequest<T>(
     const retryAfterSeconds = retryAfterHeader
       ? Number.parseInt(retryAfterHeader, 10)
       : undefined;
-    output.error(
+    fail(
       retryAfterSeconds
         ? `Rate limited. Retry in ${retryAfterSeconds}s.`
         : "Rate limited. Retry later.",
@@ -180,7 +203,7 @@ export async function apiRequest<T>(
 
   if (!res.ok) {
     const payload = await readErrorPayload(res);
-    output.error(
+    fail(
       getApiErrorMessage(payload),
       res.status,
       buildSafeErrorDetails(payload, res.status, requestId),
@@ -188,4 +211,27 @@ export async function apiRequest<T>(
   }
 
   return (await res.json()) as T;
+}
+
+export async function apiRequest<T>(
+  method: HttpMethod,
+  path: string,
+  body?: Record<string, unknown>,
+  queryParams?: Record<string, string>,
+): Promise<T> {
+  return performRequest<T>(method, path, body, queryParams, output.error);
+}
+
+/**
+ * Rejects with an ApiError instead of exiting the process. Reserved for reads
+ * that run after a write already succeeded: exiting there reports a persisted
+ * mutation as a failure and invites a non-idempotent retry.
+ */
+export async function apiRequestOrThrow<T>(
+  method: HttpMethod,
+  path: string,
+  body?: Record<string, unknown>,
+  queryParams?: Record<string, string>,
+): Promise<T> {
+  return performRequest<T>(method, path, body, queryParams, throwApiError);
 }

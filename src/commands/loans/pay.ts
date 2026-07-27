@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { apiRequest } from "../../lib/api-client.js";
+import { apiRequest, apiRequestOrThrow } from "../../lib/api-client.js";
 import { findNextPayableInstallment } from "../../lib/loan-domain.js";
 import type { LoanDetails } from "../../lib/types.js";
 import {
@@ -66,7 +66,7 @@ export async function executePayLoan(
   if (!beforeLoan) return { payment };
   let afterLoan: LoanDetails;
   try {
-    afterLoan = await apiRequest<LoanDetails>("GET", loanPath);
+    afterLoan = await apiRequestOrThrow<LoanDetails>("GET", loanPath);
   } catch {
     // The payment is already persisted; a failed re-read must never be
     // reported as a failed payment or the caller retries a non-idempotent POST.
