@@ -223,9 +223,8 @@ export async function apiRequest<T>(
 }
 
 /**
- * Rejects with an ApiError instead of exiting the process. Reserved for reads
- * that run after a write already succeeded: exiting there reports a persisted
- * mutation as a failure and invites a non-idempotent retry.
+ * Reserved for reads that run after a write already succeeded: exiting there
+ * reports a persisted mutation as a failure and invites a non-idempotent retry.
  */
 export async function apiRequestOrThrow<T>(
   method: HttpMethod,

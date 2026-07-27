@@ -6,8 +6,6 @@ const outputError = vi.fn((message: string) => {
   throw new Error(message);
 });
 
-// apiRequest exits the process on failure; only apiRequestOrThrow rejects.
-// Mocking both as one throwing function cannot tell which a command picked.
 const apiRequest = vi.fn(async (...args: unknown[]) => {
   try {
     return await transport(...args);

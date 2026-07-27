@@ -106,7 +106,6 @@ async function fetchLatestVersion(): Promise<string | undefined> {
 export async function maybeNotifyForUpdate(
   currentVersion: string,
 ): Promise<void> {
-  // An optional convenience notice must never be able to fail a CLI command.
   try {
     await runUpdateCheck(currentVersion);
   } catch {

@@ -29,7 +29,9 @@ All notable changes to this project will be documented in this file.
 - **Breaking:** `subscriptions list` mirrors the backend envelope. When the API
   answers `{ items, summary, pagination }`, `.data` is that object with the
   enriched subscriptions in `.data.items`; a bare array response still returns a
-  bare array. Read `.data.items ?? .data`.
+  bare array. In JS read `.data.items ?? .data`; with jq use
+  `.data | if type=="array" then . else .items end`, because jq hard-errors when
+  indexing an array with a string.
 - **Breaking:** `loans pay --verified` and `loans mark-paid --verified` exit `0`
   when verification fails. An accepted payment is already persisted, so the
   outcome is reported in the payload instead of the exit code:

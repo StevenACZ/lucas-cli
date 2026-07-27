@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Stands in for process.exit(1): output.error never returns in the real CLI, so
-// a call to it here means the command would have died with a failure envelope.
 const outputError = vi.fn((message: string) => {
   throw new Error(message);
 });
