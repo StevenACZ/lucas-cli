@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-12
+
 ### Added
 
 - `transactions duplicate <id>` creates a copy of a movement through the new
