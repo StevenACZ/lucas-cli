@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `transactions duplicate <id>` creates a copy of a movement through the new
+  backend endpoint `POST /transactions/:id/duplicate`.
+
 ## [0.8.0] - 2026-07-26
 
 ### Fixed

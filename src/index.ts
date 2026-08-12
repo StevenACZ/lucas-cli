@@ -33,6 +33,7 @@ import { getTransactionCommand } from "./commands/transactions/get.js";
 import { createTransactionCommand } from "./commands/transactions/create.js";
 import { updateTransactionCommand } from "./commands/transactions/update.js";
 import { deleteTransactionCommand } from "./commands/transactions/delete.js";
+import { duplicateTransactionCommand } from "./commands/transactions/duplicate.js";
 
 // Transfers
 import { listTransfersCommand } from "./commands/transfers/list.js";
@@ -123,6 +124,7 @@ transactions.addCommand(getTransactionCommand);
 transactions.addCommand(createTransactionCommand);
 transactions.addCommand(updateTransactionCommand);
 transactions.addCommand(deleteTransactionCommand);
+transactions.addCommand(duplicateTransactionCommand);
 
 // Group: transfers
 const transfers = program.command("transfers").description("Manage transfers");
