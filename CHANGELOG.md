@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-15
+
 ### Added
 
 - `accounts create --vault` and `accounts update --vault/--no-vault` set the
