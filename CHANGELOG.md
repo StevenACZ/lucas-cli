@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `accounts create --vault` and `accounts update --vault/--no-vault` set the
+  savings-vault flag. A vault account keeps counting toward totals but the
+  backend rejects it as the source of an expense, a card payment, a loan
+  payment or a subscription with `422 VAULT_CANNOT_SEND`; transferring out of
+  it stays allowed. CREDIT and INVESTMENT accounts answer
+  `422 VAULT_TYPE_UNSUPPORTED`.
+
 ## [0.9.0] - 2026-08-12
 
 ### Added

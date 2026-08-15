@@ -112,6 +112,10 @@ List commands are intentionally agent-friendly:
 - `accounts list --include-archived` includes archived accounts in the account
   array and adds `archivedAccounts` metadata. Balance/debt totals remain the
   active-account totals returned by LucasApp.
+- `accounts` exposes the `vault` flag (`create --vault`,
+  `update --vault/--no-vault`). A vault account counts toward totals and can
+  receive money, but the backend rejects it as the source of an expense, card
+  payment, loan payment or subscription; only transfers out of it are allowed.
 - `accounts list` adds `availableCredit` to CREDIT accounts:
   `max(0, creditLimit - currentDebt)`. A negative `currentDebt` (overpaid
   card) intentionally raises `availableCredit` above `creditLimit`.

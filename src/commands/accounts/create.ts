@@ -15,6 +15,7 @@ export interface CreateAccountOptions {
   cashbackRate?: string;
   color?: string;
   icon?: string;
+  vault?: boolean;
 }
 
 export function buildCreateAccountBody(
@@ -53,6 +54,7 @@ export function buildCreateAccountBody(
     body.cashbackEnabled = opts.cashbackEnabled;
   if (opts.cashbackRate !== undefined)
     body.cashbackRate = parseFiniteNumber(opts.cashbackRate, "--cashback-rate");
+  if (opts.vault !== undefined) body.vault = opts.vault;
   return body;
 }
 
@@ -89,4 +91,8 @@ export const createAccountCommand = new Command("create")
   )
   .option("--color <color>", "Account color")
   .option("--icon <icon>", "Account icon")
+  .option(
+    "--vault",
+    "Savings vault: counts toward totals but cannot fund payments (not CREDIT/INVESTMENT)",
+  )
   .action(runCreateAccount);

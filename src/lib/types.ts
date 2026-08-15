@@ -7,6 +7,7 @@ export interface Account {
   type?: string;
   creditLimit?: number | null;
   currentDebt?: number | null;
+  vault?: boolean;
   [key: string]: unknown;
 }
 
