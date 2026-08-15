@@ -31,6 +31,8 @@ export const updateAccountCommand = new Command("update")
   .option("--display-order <n>", "Display order")
   .option("--excluded", "Exclude from totals")
   .option("--no-excluded", "Include in totals")
+  .option("--vault", "Mark as savings vault (cannot fund payments)")
+  .option("--no-vault", "Clear the savings vault flag")
   .option("--is-archived", "Archive account")
   .option("--no-is-archived", "Unarchive account")
   .action(async (id: string, opts) => {
@@ -68,6 +70,7 @@ export const updateAccountCommand = new Command("update")
       },
       { opt: "displayOrder", body: "displayOrder", type: "number" },
       { opt: "excluded", body: "excluded", type: "boolean" },
+      { opt: "vault", body: "vault", type: "boolean" },
       { opt: "isArchived", body: "isArchived", type: "boolean" },
     ]);
     const data = await apiRequest(
