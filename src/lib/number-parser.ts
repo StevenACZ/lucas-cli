@@ -1,3 +1,4 @@
+import { invalidValue } from "./errors.js";
 import { output } from "./output.js";
 
 export function parseFiniteNumber(value: unknown, flag: string): number {
@@ -18,4 +19,19 @@ export function parseOptionalNumber(
   flag: string,
 ): number | undefined {
   return value === undefined ? undefined : parseFiniteNumber(value, flag);
+}
+
+const MONEY = /^\d+(\.\d{1,2})?$/;
+
+// Money is always a positive amount with at most 2 decimals; the direction
+// comes from --type (or the command), never from a sign.
+export function parseAmount(value: unknown, flag: string): number {
+  const text = String(value ?? "").trim();
+  if (!MONEY.test(text) || Number(text) <= 0) {
+    throw invalidValue(
+      `${flag} must be a positive amount with up to 2 decimals (e.g. 12.50)`,
+      { value },
+    );
+  }
+  return Number(text);
 }

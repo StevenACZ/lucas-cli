@@ -1,70 +1,54 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
-import {
-  extractItems,
-  type Account,
-  type AccountsSummary,
-} from "../../lib/types.js";
+import { extractItems, type AccountsSummary } from "../../lib/types.js";
+import { accountView, stripHeavy } from "../../lib/views.js";
 
-export function withAvailableCredit<T extends AccountsSummary>(data: T): T {
-  if (!data || !Array.isArray(data.accounts)) return data;
-  const accounts = data.accounts.map((acc) => {
-    if (acc.type === "CREDIT" && acc.creditLimit != null) {
-      const limit = Number(acc.creditLimit);
-      // currentDebt can be negative (credit balance in the user's favor),
-      // which intentionally raises availableCredit above creditLimit.
-      const debt = Number(acc.currentDebt ?? 0);
-      const available = Math.max(0, Math.round((limit - debt) * 100) / 100);
-      return { ...acc, availableCredit: available };
-    }
-    return acc;
-  });
-  return { ...data, accounts };
-}
+type Row = Record<string, unknown>;
 
-export function withArchivedAccounts<T extends AccountsSummary>(
-  data: T,
-  archivedAccounts: Account[],
-): T & { archivedAccounts: Account[]; archivedAccountsCount: number } {
+export function accountsListPayload(
+  summary: AccountsSummary,
+  archived: Row[],
+  full = false,
+): { data: Row[]; meta: Row } {
+  const rows = [
+    ...(extractItems<Row>(summary, ["accounts", "items"]) ?? []),
+    ...archived,
+  ];
   return {
-    ...data,
-    accounts: [
-      ...(Array.isArray(data.accounts) ? data.accounts : []),
-      ...archivedAccounts,
-    ],
-    archivedAccounts,
-    archivedAccountsCount: archivedAccounts.length,
+    data: rows.map((row) => (full ? stripHeavy(row) : accountView(row))),
+    meta: {
+      count: rows.length,
+      balancesByCurrency: summary.balancesByCurrency ?? {},
+      debtByCurrency: summary.debtByCurrency ?? {},
+    },
   };
 }
 
-export function getArchivedAccountItems(response: unknown): Account[] {
-  return extractItems<Account>(response, ["accounts", "items"]) ?? [];
-}
-
 export const listAccountsCommand = new Command("list")
-  .description("List all accounts (CREDIT accounts include availableCredit)")
-  .option("--include-archived", "Include archived accounts")
+  .description("List accounts with balances (CREDIT rows add availableCredit)")
+  .option("--include-archived", "Append archived accounts")
+  .option("--full", "Print the raw backend objects")
   .addHelpText(
     "after",
     `
-Notes:
-  - availableCredit = max(0, creditLimit - currentDebt). A negative
-    currentDebt (overpaid card, balance in the user's favor) increases
-    availableCredit above creditLimit; this is intentional.
+Output: data is an array of accounts; meta has count, balancesByCurrency and
+debtByCurrency (active accounts only). availableCredit = max(0, creditLimit -
+currentDebt); an overpaid card (negative currentDebt) raises it above the limit.
+
+Examples:
+  lucas accounts list
+  lucas accounts list --include-archived
 `,
   )
-  .action(async (opts) => {
-    const data = await apiRequest<AccountsSummary>("GET", "/api/accounts");
-    if (!opts.includeArchived) {
-      output.success(withAvailableCredit(data));
-      return;
-    }
-
-    const archivedAccounts = getArchivedAccountItems(
-      await apiRequest<unknown>("GET", "/api/accounts/archived"),
-    );
-    output.success(
-      withAvailableCredit(withArchivedAccounts(data, archivedAccounts)),
-    );
+  .action(async (opts: { includeArchived?: boolean; full?: boolean }) => {
+    const summary = await apiRequest<AccountsSummary>("GET", "/api/accounts");
+    const archived = opts.includeArchived
+      ? (extractItems<Row>(
+          await apiRequest<unknown>("GET", "/api/accounts/archived"),
+          ["accounts", "items"],
+        ) ?? [])
+      : [];
+    const { data, meta } = accountsListPayload(summary, archived, opts.full);
+    output.success(data, meta);
   });

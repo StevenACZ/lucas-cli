@@ -4,6 +4,78 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-28
+
+### Breaking
+
+- Every invocation prints exactly one JSON document on stdout, success and
+  error alike: `{ok:true, data, meta?}` or
+  `{ok:false, error:{code, message, status?, hint?, details?}}`. Errors no longer go to stderr and commander usage
+  errors are JSON too (`UNKNOWN_OPTION` with `validOptions`, `UNKNOWN_COMMAND`
+  with `commands`, `MISSING_OPTION`, `INVALID_VALUE`). Output is compact when
+  piped and pretty on a TTY (`LUCAS_PRETTY=0|1` overrides).
+- Exit codes: `0` ok, `1` failure, `2` usage or validation, `3` auth, `4` not
+  found, `5` rate limited.
+- List commands return `data` as an array, never a wrapper object, with
+  pagination and summaries in `meta` (`count` always; `limit`, `offset`,
+  `hasMore` or `truncated` when paginated): `accounts list`, `transactions list`,
+  `transfers list`, `categories list`, `subscriptions list`,
+  `subscription-charges list|pending|by-account`, `subscription-groups list`,
+  `loans list`.
+- `accounts list`, `transactions`, `transfers` and `categories` print compact
+  views (`--full` keeps the raw object where offered). Transfers are one row
+  per transfer with `from` and `to` accounts instead of two leg rows.
+- Money-moving writes return the compact object plus the balances after the write
+  (`account` or `accounts`), e.g. `transfers create` returns
+  `{transfer, fee, accounts}`.
+- Money flags take a positive amount with at most 2 decimals; the direction
+  comes from `--type` or the command, never from a sign.
+- `accounts delete`, `loans delete`, `subscriptions delete`,
+  `subscription-groups delete`, `trash permanent-delete-*` and `trash empty-*`
+  require `--yes`; without it they fail with `CONFIRMATION_REQUIRED` (exit 2).
+- Enum flags reject unknown values with the allowed list instead of passing
+  them to the API.
+- `subscriptions list` defaults to 100 rows per page instead of the backend's 10.
+- `accounts debt-detail` no longer forces `--mode current_cycle`; the backend
+  picks `current_cycle` when the card has a closing day, else `custom`.
+
+### Added
+
+- Accounts and categories are accepted by name everywhere an id was: exact
+  accent/case-insensitive match first, then a unique partial match; otherwise
+  `AMBIGUOUS` or `NOT_FOUND` with candidates. Same-name default and custom
+  categories resolve to the most recently used copy for writes and to every
+  copy for filters. The old `--*-id` flags keep working as hidden aliases.
+- `lucas overview`: accounts, totals by currency, this month's income, expense
+  and net, and the pending charge count in one call.
+- `lucas commands`: JSON catalog of every command, argument and option.
+- `accounts get`, `transfers get`, `subscriptions get`, `loans get`.
+- `transactions create-many --file <path|->`: validates every item first, then
+  creates them through the bulk endpoint (50 per request, grouped per account),
+  skipping duplicates; supports `--dry-run`.
+- `transfers create --fee <amount>` records the fee as an expense on the source
+  account atomically with the transfer (`--fee-description`,
+  `--fee-category`); `--rate` replaces `--exchange-rate`.
+- `--dry-run` on `transactions create`, `transactions create-many`,
+  `transfers create`, `accounts pay-expense(s)` and `loans pay`.
+- `--date` accepts `today`/`hoy`, `yesterday`/`ayer`, `YYYY-MM-DD` (12:00
+  local), `YYYY-MM-DDTHH:mm` or ISO 8601 with offset; transaction and transfer
+  views carry `localDate` in `LUCAS_TZ` or the machine timezone.
+- `transactions list --all [--max n]` and exact `hasMore` on every paginated
+  list.
+- `categories list --type --search`, `subscriptions list --include-inactive`,
+  `subscription-charges list --subscription --status`.
+
+### Fixed
+
+- Heavy blobs (`*Base64`, `ocrRawResponse`) never reach stdout, including
+  `auth status --remote`, loans and subscriptions.
+- `transfers update` without `--amount` resends the current amount, so a
+  notes-only edit works.
+- `accounts debt-detail` on a card without a statement closing day explains how
+  to set it instead of a bare backend error.
+- `auth status` without credentials exits `3` with `UNAUTHENTICATED`.
+
 ## [0.10.0] - 2026-08-15
 
 ### Added

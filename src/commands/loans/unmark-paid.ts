@@ -1,8 +1,10 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
+import { CliError } from "../../lib/errors.js";
 import { output } from "../../lib/output.js";
 import { resourcePath } from "../../lib/resource-path.js";
 import type { LoanDetails } from "../../lib/types.js";
+import { stripHeavy } from "../../lib/views.js";
 
 export const unmarkPaidLoanCommand = new Command("unmark-paid")
   .description("Reverse a loan payment (default: most recent)")
@@ -21,7 +23,11 @@ export const unmarkPaidLoanCommand = new Command("unmark-paid")
         resourcePath("/api/loans", id),
       );
       if (!loan.payments || loan.payments.length === 0) {
-        output.error("No payments found for this loan", 404, { loanId: id });
+        throw new CliError({
+          code: "NOT_FOUND",
+          message: "No payments found for this loan",
+          details: { loanId: id },
+        });
       }
       const sorted = [...loan.payments].sort(
         (a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime(),
@@ -34,5 +40,5 @@ export const unmarkPaidLoanCommand = new Command("unmark-paid")
       resourcePath("/api/loans", id, "reverse-payment"),
       { paymentId },
     );
-    output.success(data);
+    output.success(stripHeavy(data));
   });

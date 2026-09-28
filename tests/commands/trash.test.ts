@@ -83,13 +83,30 @@ describe("trash commands", () => {
   it("permanently deletes a trashed transfer", async () => {
     apiRequest.mockResolvedValue({ success: true });
 
-    await trashCommand.parseAsync(["permanent-delete-transfer", "tr_1"], {
-      from: "user",
-    });
+    await trashCommand.parseAsync(
+      ["permanent-delete-transfer", "tr_1", "--yes"],
+      { from: "user" },
+    );
 
     expect(apiRequest).toHaveBeenCalledWith(
       "DELETE",
       "/api/transfers/tr_1/permanent",
     );
+  });
+
+  it.each([
+    ["permanent-delete-transaction", "tx_1"],
+    ["permanent-delete-transfer", "tr_1"],
+    ["empty-transactions"],
+    ["empty-transfers"],
+  ])("refuses %s without --yes", async (...args) => {
+    await expect(
+      trashCommand.parseAsync(args, { from: "user" }),
+    ).rejects.toMatchObject({
+      code: "CONFIRMATION_REQUIRED",
+      exitCode: 2,
+      hint: "Re-run with --yes",
+    });
+    expect(apiRequest).not.toHaveBeenCalled();
   });
 });

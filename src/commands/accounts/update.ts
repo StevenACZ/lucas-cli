@@ -2,24 +2,29 @@ import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
 import { buildBody } from "../../lib/body-builder.js";
+import { resolveAccountId } from "../../lib/resolve.js";
 import { resourcePath } from "../../lib/resource-path.js";
+import { accountView } from "../../lib/views.js";
 
 export const updateAccountCommand = new Command("update")
   .description("Update an account")
-  .argument("<id>", "Account ID")
+  .argument("<account>", "Account name or id")
   .option("--name <name>", "Account name")
   .option("--bank <bank>", "Bank name")
   .option("--currency <currency>", "Currency code")
-  .option("--color <color>", "Account color")
+  .option("--color <color>", "Account color (#RRGGBB)")
   .option("--clear-color", "Clear account color")
-  .option("--icon <icon>", "Account icon")
+  .option("--icon <icon>", "Account icon name")
   .option("--clear-icon", "Clear account icon")
-  .option("--balance <amount>", "Account balance")
-  .option("--credit-limit <amount>", "Credit limit")
+  .option("--balance <amount>", "Set the balance (number)")
+  .option("--credit-limit <amount>", "Credit limit (CREDIT only)")
   .option("--clear-credit-limit", "Clear credit limit")
-  .option("--current-debt <amount>", "Current debt")
+  .option("--current-debt <amount>", "Current debt (CREDIT only)")
   .option("--clear-current-debt", "Clear current debt")
-  .option("--statement-closing-day <day>", "Statement closing day")
+  .option(
+    "--statement-closing-day <day>",
+    "Statement closing day, 1..31 (CREDIT only)",
+  )
   .option("--clear-statement-closing-day", "Clear statement closing day")
   .option("--cashback-enabled", "Enable cashback (CREDIT only)")
   .option("--no-cashback-enabled", "Disable cashback")
@@ -28,14 +33,23 @@ export const updateAccountCommand = new Command("update")
     "Cashback rate percent per purchase (0.01..100, CREDIT only)",
   )
   .option("--clear-cashback-rate", "Clear cashback rate")
-  .option("--display-order <n>", "Display order")
+  .option("--display-order <n>", "Display order (integer)")
   .option("--excluded", "Exclude from totals")
   .option("--no-excluded", "Include in totals")
   .option("--vault", "Mark as savings vault (cannot fund payments)")
   .option("--no-vault", "Clear the savings vault flag")
   .option("--is-archived", "Archive account")
   .option("--no-is-archived", "Unarchive account")
-  .action(async (id: string, opts) => {
+  .addHelpText(
+    "after",
+    `
+Examples:
+  lucas accounts update "Visa Signature" --statement-closing-day 20
+  lucas accounts update "Efectivo" --name "Cash" --excluded
+`,
+  )
+  .action(async (ref: string, opts) => {
+    const id = String(await resolveAccountId(ref));
     const body = buildBody(opts, [
       { opt: "name", body: "name" },
       { opt: "bank", body: "bank" },
@@ -73,10 +87,10 @@ export const updateAccountCommand = new Command("update")
       { opt: "vault", body: "vault", type: "boolean" },
       { opt: "isArchived", body: "isArchived", type: "boolean" },
     ]);
-    const data = await apiRequest(
+    const account = await apiRequest<Record<string, unknown>>(
       "PUT",
       resourcePath("/api/accounts", id),
       body,
     );
-    output.success(data);
+    output.success({ account: accountView(account) });
   });

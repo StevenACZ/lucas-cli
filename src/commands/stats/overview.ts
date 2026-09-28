@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { setOptionalIntegerQueryParam } from "../../lib/query-params.js";
 import { output } from "../../lib/output.js";
+import { stripHeavy } from "../../lib/views.js";
 
 export const overviewCommand = new Command("overview")
   .description(
@@ -34,5 +35,5 @@ export const overviewCommand = new Command("overview")
       undefined,
       params,
     );
-    output.success(data);
+    output.success(stripHeavy(data));
   });

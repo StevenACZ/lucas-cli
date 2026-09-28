@@ -1,15 +1,21 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
+import { accountsAfterWrite } from "../../lib/effects.js";
 import { output } from "../../lib/output.js";
 import { resourcePath } from "../../lib/resource-path.js";
+import { transactionView } from "../../lib/views.js";
+
+type Row = Record<string, unknown>;
 
 export const deleteTransactionCommand = new Command("delete")
-  .description("Delete a transaction")
-  .argument("<id>", "Transaction ID")
+  .description("Move a transaction to the trash (restore with lucas trash)")
+  .argument("<id>", "Transaction id")
   .action(async (id: string) => {
-    const data = await apiRequest(
-      "DELETE",
-      resourcePath("/api/transactions", id),
-    );
-    output.success(data);
+    const path = resourcePath("/api/transactions", id);
+    const transaction = await apiRequest<Row>("GET", path);
+    await apiRequest("DELETE", path);
+    const [account] = await accountsAfterWrite([
+      transaction.accountId as string | undefined,
+    ]);
+    output.success({ deleted: transactionView(transaction), account });
   });

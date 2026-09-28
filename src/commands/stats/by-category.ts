@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { setOptionalIntegerQueryParam } from "../../lib/query-params.js";
 import { output } from "../../lib/output.js";
+import { stripHeavy } from "../../lib/views.js";
 
 export const byCategoryCommand = new Command("by-category")
   .description("Get statistics by category")
@@ -31,5 +32,5 @@ export const byCategoryCommand = new Command("by-category")
       undefined,
       params,
     );
-    output.success(data);
+    output.success(stripHeavy(data));
   });

@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { apiRequest, apiRequestOrThrow } from "../../lib/api-client.js";
 import { findNextPayableInstallment } from "../../lib/loan-domain.js";
 import type { LoanDetails } from "../../lib/types.js";
@@ -11,18 +11,23 @@ import {
   parseFiniteNumber,
   parseOptionalNumber,
 } from "../../lib/number-parser.js";
+import { accountsAfterWrite } from "../../lib/effects.js";
 import { output } from "../../lib/output.js";
+import { resolveAccountId } from "../../lib/resolve.js";
 import { resourcePath } from "../../lib/resource-path.js";
+import { stripHeavy } from "../../lib/views.js";
 
 export interface PayLoanOptions {
   amount: number | string;
   currency?: string;
   loanAmount?: number | string;
   exchangeRate?: number | string;
+  account?: string;
   accountId?: string;
   notes?: string;
   paidAt?: string;
   verified?: boolean;
+  dryRun?: boolean;
 }
 
 export interface PayLoanExecutionResult {
@@ -92,24 +97,46 @@ export async function executePayLoan(
 }
 
 export async function runPayLoan(id: string, opts: PayLoanOptions) {
-  const result = await executePayLoan(id, opts);
-  output.success(result.verification ? result : result.payment);
+  const accountId = await resolveAccountId(opts.account ?? opts.accountId);
+  const resolved = { ...opts, accountId };
+  if (opts.dryRun) {
+    output.success({
+      dryRun: true,
+      request: {
+        method: "POST",
+        path: resourcePath("/api/loans", id, "pay"),
+        body: buildPayLoanPayload(resolved),
+      },
+    });
+    return;
+  }
+  const result = await executePayLoan(id, resolved);
+  output.success({
+    ...stripHeavy(result),
+    accounts: await accountsAfterWrite([accountId]),
+  });
 }
 
 export const payLoanCommand = new Command("pay")
   .description("Make a loan payment")
   .argument("<id>", "Loan ID")
-  .requiredOption("--amount <amount>", "Payment amount")
-  .option("--currency <code>", "Payment currency")
-  .option("--loan-amount <amount>", "Loan currency amount")
-  .option("--exchange-rate <rate>", "Exchange rate")
-  .option("--account-id <id>", "Account ID")
+  .requiredOption("--amount <amount>", "Amount paid, in the payment currency")
+  .option("--currency <code>", "Payment currency (default: the loan currency)")
+  .option(
+    "--loan-amount <amount>",
+    "Amount credited in the loan currency (cross-currency payments)",
+  )
+  .option("--exchange-rate <rate>", "Exchange rate payment→loan currency")
+  .option("--account <name|id>", "Paying account name or id")
+  .addOption(new Option("--account-id <id>").hideHelp())
   .option("--notes <notes>", "Payment notes")
-  .option("--paid-at <date>", "Payment date (YYYY-MM-DD)")
+  .option("--paid-at <date>", "Payment day (YYYY-MM-DD)")
   .option("--verified", "Re-read the loan after paying and verify server state")
+  .option("--dry-run", "Resolve and validate, print the request, write nothing")
   .addHelpText(
     "after",
-    "\nExample:\n  lucas loans pay <id> --amount 750 --verified\n" +
+    "\nExamples:\n  lucas loans pay <id> --amount 750 --account Soles --verified\n" +
+      "  lucas loans pay <id> --amount 750 --account Soles --dry-run\n" +
       "\nAn accepted payment always exits 0. Read data.verification.verified:\n" +
       "true (checked), false (server state looks wrong), null (check failed).\n",
   )

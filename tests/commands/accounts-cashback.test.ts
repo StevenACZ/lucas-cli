@@ -2,19 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const apiRequest = vi.fn();
 const outputSuccess = vi.fn();
-const outputError = vi.fn((message: string) => {
-  throw new Error(message);
-});
 
-vi.mock("../../src/lib/api-client.js", () => ({
-  apiRequest,
-}));
-
+vi.mock("../../src/lib/api-client.js", () => ({ apiRequest }));
 vi.mock("../../src/lib/output.js", () => ({
-  output: {
-    success: outputSuccess,
-    error: outputError,
-  },
+  output: { success: outputSuccess, error: vi.fn() },
+}));
+vi.mock("../../src/lib/resolve.js", () => ({
+  resolveAccountId: async (ref?: string) => ref && `id_${ref}`,
+}));
+vi.mock("../../src/lib/effects.js", () => ({
+  accountsAfterWrite: async (ids: string[]) => ids.map((id) => ({ id })),
 }));
 
 const { cashbackRedeemCommand, cashbackAdjustCommand } =
@@ -24,56 +21,62 @@ describe("accounts cashback commands", () => {
   beforeEach(() => {
     apiRequest.mockReset();
     outputSuccess.mockReset();
-    outputError.mockClear();
   });
 
-  it("redeems cashback with a numeric amount", async () => {
-    const response = { success: true, cashbackBalance: 10 };
-    apiRequest.mockResolvedValue(response);
+  it("redeems cashback by account name and returns the balance after", async () => {
+    apiRequest.mockResolvedValue({
+      success: true,
+      cashbackBalance: 10,
+      account: { id: "id_Visa", imageBase64: "x" },
+    });
 
-    await cashbackRedeemCommand.parseAsync(["acc_123", "--amount", "25.5"], {
+    await cashbackRedeemCommand.parseAsync(["Visa", "--amount", "25.5"], {
       from: "user",
     });
 
     expect(apiRequest).toHaveBeenCalledWith(
       "POST",
-      "/api/accounts/acc_123/cashback/redeem",
+      "/api/accounts/id_Visa/cashback/redeem",
       { amount: 25.5 },
     );
-    expect(outputSuccess).toHaveBeenCalledWith(response);
+    expect(outputSuccess).toHaveBeenCalledWith({
+      success: true,
+      cashbackBalance: 10,
+      account: { id: "id_Visa" },
+    });
   });
 
-  it("rejects non-numeric redeem amounts", async () => {
-    await expect(
-      cashbackRedeemCommand.parseAsync(["acc_123", "--amount", "abc"], {
-        from: "user",
-      }),
-    ).rejects.toThrow("Invalid numeric value for --amount");
-
-    expect(apiRequest).not.toHaveBeenCalled();
-  });
-
-  it("rejects a blank amount instead of sending 0", async () => {
-    await expect(
-      cashbackRedeemCommand.parseAsync(["acc_123", "--amount", ""], {
-        from: "user",
-      }),
-    ).rejects.toThrow("Invalid numeric value for --amount");
-
-    expect(apiRequest).not.toHaveBeenCalled();
-  });
+  it.each(["abc", "", "-5", "1.234"])(
+    "rejects redeem amount %j before any request",
+    async (amount) => {
+      await expect(
+        cashbackRedeemCommand.parseAsync(["Visa", "--amount", amount], {
+          from: "user",
+        }),
+      ).rejects.toMatchObject({ code: "INVALID_VALUE" });
+      expect(apiRequest).not.toHaveBeenCalled();
+    },
+  );
 
   it("adjusts the cashback balance to a target value", async () => {
     apiRequest.mockResolvedValue({ success: true, cashbackBalance: 100 });
 
-    await cashbackAdjustCommand.parseAsync(["acc_123", "--balance", "100"], {
+    await cashbackAdjustCommand.parseAsync(["Visa", "--balance", "100"], {
       from: "user",
     });
 
     expect(apiRequest).toHaveBeenCalledWith(
       "POST",
-      "/api/accounts/acc_123/cashback/adjust",
+      "/api/accounts/id_Visa/cashback/adjust",
       { balance: 100 },
     );
+  });
+
+  it("rejects a negative target balance", async () => {
+    await expect(
+      cashbackAdjustCommand.parseAsync(["Visa", "--balance=-1"], {
+        from: "user",
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_VALUE" });
   });
 });

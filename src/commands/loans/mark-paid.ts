@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import {
   findNextPayableInstallment,
   getInstallmentRemaining,
@@ -11,10 +11,15 @@ import {
   type PayLoanOptions,
 } from "./pay.js";
 import { apiRequest } from "../../lib/api-client.js";
+import { accountsAfterWrite } from "../../lib/effects.js";
+import { invalidValue } from "../../lib/errors.js";
+import { resolveAccountId } from "../../lib/resolve.js";
 import { resourcePath } from "../../lib/resource-path.js";
+import { stripHeavy } from "../../lib/views.js";
 
 export interface MarkPaidLoanOptions {
   currency?: string;
+  account?: string;
   accountId?: string;
   notes?: string;
   paidAt?: string;
@@ -40,7 +45,7 @@ export async function executeMarkPaidLoan(
   );
   const installment = findNextPayableInstallment(loan);
   if (!installment) {
-    output.error("No pending installment found for this loan", 400, {
+    throw invalidValue("No pending installment found for this loan", {
       loanId: id,
     });
   }
@@ -73,17 +78,22 @@ export async function executeMarkPaidLoan(
 }
 
 export async function runMarkPaidLoan(id: string, opts: MarkPaidLoanOptions) {
-  const result = await executeMarkPaidLoan(id, opts);
-  output.success(result);
+  const accountId = await resolveAccountId(opts.account ?? opts.accountId);
+  const result = await executeMarkPaidLoan(id, { ...opts, accountId });
+  output.success({
+    ...stripHeavy(result),
+    accounts: await accountsAfterWrite([accountId]),
+  });
 }
 
 export const markPaidLoanCommand = new Command("mark-paid")
   .description("Mark the next pending loan installment as paid")
   .argument("<id>", "Loan ID")
   .option("--currency <code>", "Payment currency")
-  .option("--account-id <id>", "Account ID")
+  .option("--account <name|id>", "Paying account name or id")
+  .addOption(new Option("--account-id <id>").hideHelp())
   .option("--notes <notes>", "Payment notes")
-  .option("--paid-at <date>", "Payment date (YYYY-MM-DD)")
+  .option("--paid-at <date>", "Payment day (YYYY-MM-DD)")
   .option("--verified", "Re-read the loan after paying and verify server state")
   .addHelpText(
     "after",

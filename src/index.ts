@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { runProgram } from "./lib/program.js";
 import { maybeNotifyForUpdate } from "./lib/update-notifier.js";
 import { CLI_VERSION } from "./lib/version.js";
 
@@ -10,6 +11,7 @@ import { statusCommand } from "./commands/auth/status.js";
 
 // Accounts
 import { listAccountsCommand } from "./commands/accounts/list.js";
+import { getAccountCommand } from "./commands/accounts/get.js";
 import { createAccountCommand } from "./commands/accounts/create.js";
 import { updateAccountCommand } from "./commands/accounts/update.js";
 import { deleteAccountCommand } from "./commands/accounts/delete.js";
@@ -31,18 +33,21 @@ import {
 import { listTransactionsCommand } from "./commands/transactions/list.js";
 import { getTransactionCommand } from "./commands/transactions/get.js";
 import { createTransactionCommand } from "./commands/transactions/create.js";
+import { createManyTransactionsCommand } from "./commands/transactions/create-many.js";
 import { updateTransactionCommand } from "./commands/transactions/update.js";
 import { deleteTransactionCommand } from "./commands/transactions/delete.js";
 import { duplicateTransactionCommand } from "./commands/transactions/duplicate.js";
 
 // Transfers
 import { listTransfersCommand } from "./commands/transfers/list.js";
+import { getTransferCommand } from "./commands/transfers/get.js";
 import { createTransferCommand } from "./commands/transfers/create.js";
 import { updateTransferCommand } from "./commands/transfers/update.js";
 import { deleteTransferCommand } from "./commands/transfers/delete.js";
 
 // Subscriptions
 import { listSubscriptionsCommand } from "./commands/subscriptions/list.js";
+import { getSubscriptionCommand } from "./commands/subscriptions/get.js";
 import { createSubscriptionCommand } from "./commands/subscriptions/create.js";
 import { updateSubscriptionCommand } from "./commands/subscriptions/update.js";
 import { deleteSubscriptionCommand } from "./commands/subscriptions/delete.js";
@@ -55,6 +60,7 @@ import { settingsCommand } from "./commands/settings/index.js";
 
 // Loans
 import { listLoansCommand } from "./commands/loans/list.js";
+import { getLoanCommand } from "./commands/loans/get.js";
 import { createLoanCommand } from "./commands/loans/create.js";
 import { updateLoanCommand } from "./commands/loans/update.js";
 import { payLoanCommand } from "./commands/loans/pay.js";
@@ -84,12 +90,19 @@ import { parseExpensesImageCommand } from "./commands/ai/parse-expenses-image.js
 // Trash
 import { trashCommand } from "./commands/trash/index.js";
 
+// Agent entry points
+import { overviewCommand as agentOverviewCommand } from "./commands/overview.js";
+import { commandsCommand } from "./commands/catalog.js";
+
 const program = new Command();
 
 program
   .name("lucas")
   .description("LucasApp CLI - Financial data management for AI agents")
   .version(CLI_VERSION);
+
+program.addCommand(agentOverviewCommand);
+program.addCommand(commandsCommand);
 
 // Group: auth
 const auth = program.command("auth").description("Authentication commands");
@@ -102,6 +115,7 @@ const accounts = program
   .command("accounts")
   .description("Manage financial accounts");
 accounts.addCommand(listAccountsCommand);
+accounts.addCommand(getAccountCommand);
 accounts.addCommand(createAccountCommand);
 accounts.addCommand(updateAccountCommand);
 accounts.addCommand(deleteAccountCommand);
@@ -122,6 +136,7 @@ const transactions = program
 transactions.addCommand(listTransactionsCommand);
 transactions.addCommand(getTransactionCommand);
 transactions.addCommand(createTransactionCommand);
+transactions.addCommand(createManyTransactionsCommand);
 transactions.addCommand(updateTransactionCommand);
 transactions.addCommand(deleteTransactionCommand);
 transactions.addCommand(duplicateTransactionCommand);
@@ -129,6 +144,7 @@ transactions.addCommand(duplicateTransactionCommand);
 // Group: transfers
 const transfers = program.command("transfers").description("Manage transfers");
 transfers.addCommand(listTransfersCommand);
+transfers.addCommand(getTransferCommand);
 transfers.addCommand(createTransferCommand);
 transfers.addCommand(updateTransferCommand);
 transfers.addCommand(deleteTransferCommand);
@@ -138,6 +154,7 @@ const subscriptions = program
   .command("subscriptions")
   .description("Manage subscriptions");
 subscriptions.addCommand(listSubscriptionsCommand);
+subscriptions.addCommand(getSubscriptionCommand);
 subscriptions.addCommand(createSubscriptionCommand);
 subscriptions.addCommand(updateSubscriptionCommand);
 subscriptions.addCommand(deleteSubscriptionCommand);
@@ -152,6 +169,7 @@ program.addCommand(settingsCommand);
 // Group: loans
 const loans = program.command("loans").description("Manage loans");
 loans.addCommand(listLoansCommand);
+loans.addCommand(getLoanCommand);
 loans.addCommand(createLoanCommand);
 loans.addCommand(updateLoanCommand);
 loans.addCommand(payLoanCommand);
@@ -197,5 +215,5 @@ if (process.env.LUCAS_INVESTMENTS === "1") {
   program.addCommand(investmentsCommand);
 }
 
-await program.parseAsync(process.argv);
+await runProgram(program);
 await maybeNotifyForUpdate(CLI_VERSION);

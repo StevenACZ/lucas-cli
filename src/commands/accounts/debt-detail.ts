@@ -1,7 +1,15 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
+import { choice } from "../../lib/choices.js";
+import { parseDateOption } from "../../lib/dates.js";
+import { CliError } from "../../lib/errors.js";
 import { output } from "../../lib/output.js";
+import { parseLimit, parseOffset } from "../../lib/paging.js";
+import { resolveAccount } from "../../lib/resolve.js";
 import { resourcePath } from "../../lib/resource-path.js";
+import { stripHeavy } from "../../lib/views.js";
+
+const MODES = ["current_cycle", "last_statement", "custom"];
 
 export interface DebtDetailOptions {
   mode?: string;
@@ -18,59 +26,80 @@ export function buildDebtDetailParams(
   opts: DebtDetailOptions,
 ): Record<string, string> {
   const params: Record<string, string> = {
-    mode: opts.mode ?? "current_cycle",
-    limit: opts.limit ?? "100",
-    offset: opts.offset ?? "0",
+    limit: String(parseLimit(opts.limit, 100)),
+    offset: String(parseOffset(opts.offset)),
   };
-  if (opts.anchorDate) params.anchorDate = opts.anchorDate;
-  if (opts.startDate) params.startDate = opts.startDate;
-  if (opts.endDate) params.endDate = opts.endDate;
+  if (opts.mode) params.mode = opts.mode;
+  const anchorDate = parseDateOption(opts.anchorDate, "--anchor-date");
+  const startDate = parseDateOption(opts.startDate, "--start-date");
+  const endDate = parseDateOption(opts.endDate, "--end-date");
+  if (anchorDate) params.anchorDate = anchorDate;
+  if (startDate) params.startDate = startDate;
+  if (endDate) params.endDate = endDate;
   if (opts.search) params.searchText = opts.search;
   if (opts.onlyPending) params.onlyPending = "true";
   return params;
 }
 
-export async function runDebtDetail(id: string, opts: DebtDetailOptions) {
+export async function runDebtDetail(ref: string, opts: DebtDetailOptions) {
   const params = buildDebtDetailParams(opts);
+  const account = await resolveAccount(ref);
+  const needsClosingDay =
+    params.mode === "current_cycle" || params.mode === "last_statement";
+  if (
+    needsClosingDay &&
+    account.type === "CREDIT" &&
+    (account.statementClosingDay === null ||
+      account.statementClosingDay === undefined)
+  ) {
+    throw new CliError({
+      code: "INVALID_VALUE",
+      message: `--mode ${params.mode} needs a statement closing day and "${account.name}" has none`,
+      hint: `Run: lucas accounts update "${account.name}" --statement-closing-day <1..31>, or use --mode custom`,
+    });
+  }
   const data = await apiRequest(
     "GET",
-    resourcePath("/api/accounts", id, "credit-debt-breakdown"),
+    resourcePath("/api/accounts", String(account.id), "credit-debt-breakdown"),
     undefined,
     params,
   );
-  output.success(data);
+  output.success(stripHeavy(data));
 }
 
 export const debtDetailCommand = new Command("debt-detail")
   .description("Get credit card debt breakdown for a billing cycle")
-  .argument("<id>", "Credit account ID")
+  .argument("<account>", "Credit account name or id")
   .option(
     "--mode <mode>",
-    "Cycle mode: current_cycle | last_statement | custom",
-    "current_cycle",
+    "current_cycle, last_statement or custom (default: current_cycle when the card has a closing day, else custom)",
+    choice(MODES),
   )
-  .option("--anchor-date <date>", "Anchor date (YYYY-MM-DD), defaults to today")
-  .option("--start-date <date>", "Custom mode start date (YYYY-MM-DD)")
-  .option("--end-date <date>", "Custom mode end date (YYYY-MM-DD)")
+  .option(
+    "--anchor-date <date>",
+    "today, yesterday or YYYY-MM-DD (default: today)",
+  )
+  .option("--start-date <date>", "Custom mode start day (YYYY-MM-DD)")
+  .option("--end-date <date>", "Custom mode end day (YYYY-MM-DD)")
   .option("--search <text>", "Filter by description or notes")
   .option("--only-pending", "Only unpaid items")
-  .option("--limit <n>", "Items per page (1..100)", "100")
-  .option("--offset <n>", "Pagination offset", "0")
+  .option("--limit <n>", "Items per page, 1..100 (default 100)")
+  .option("--offset <n>", "Items to skip (default 0)")
   .addHelpText(
     "after",
     `
 Notes:
   - Payments are returned as separate rows; individual charges are NOT
     marked partially paid (the model does not allocate payments to specific charges).
-  - Modes current_cycle and last_statement require the account to have
-    a statementClosingDay set. Without one, use --mode custom.
+  - Modes current_cycle and last_statement need a statement closing day:
+    lucas accounts update <card> --statement-closing-day <1..31>.
   - Archived accounts are handled the same way as the LucasApp account view.
 
 Examples:
-  lucas accounts debt-detail acc_123
-  lucas accounts debt-detail acc_123 --mode last_statement
-  lucas accounts debt-detail acc_123 --mode custom --start-date 2026-04-01 --end-date 2026-04-15
-  lucas accounts debt-detail acc_123 --only-pending --search uber
+  lucas accounts debt-detail "Visa Signature"
+  lucas accounts debt-detail "Visa Signature" --mode last_statement
+  lucas accounts debt-detail "Visa Signature" --mode custom --start-date 2026-04-01 --end-date 2026-04-15
+  lucas accounts debt-detail "Visa Signature" --only-pending --search uber
 `,
   )
   .action(runDebtDetail);

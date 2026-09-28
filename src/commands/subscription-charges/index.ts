@@ -1,8 +1,18 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
+import { choice } from "../../lib/choices.js";
 import { compactParams } from "../../lib/query-params.js";
 import { output } from "../../lib/output.js";
+import { resolveAccountId } from "../../lib/resolve.js";
 import { resourcePath } from "../../lib/resource-path.js";
+import { extractItems } from "../../lib/types.js";
+import { stripHeavy } from "../../lib/views.js";
+
+type Row = Record<string, unknown>;
+
+export function chargeRows(response: unknown): Row[] {
+  return stripHeavy(extractItems<Row>(response, ["items", "charges"]) ?? []);
+}
 
 interface PendingChargesOptions {
   limit?: string;
@@ -21,37 +31,64 @@ export const subscriptionChargesCommand = new Command(
 
 subscriptionChargesCommand
   .command("list")
-  .description("List all generated subscription charges")
-  .action(async () => {
-    const data = await apiRequest("GET", "/api/subscription-charges");
-    output.success(data);
+  .description(
+    "List generated subscription charges, newest due first (max 100)",
+  )
+  .option("--subscription <id>", "Only charges of this subscription id")
+  .option(
+    "--status <status>",
+    "PENDING, OVERDUE or PAID",
+    choice(["PENDING", "OVERDUE", "PAID"]),
+  )
+  .action(async (opts: { subscription?: string; status?: string }) => {
+    const rows = chargeRows(
+      await apiRequest(
+        "GET",
+        "/api/subscription-charges",
+        undefined,
+        compactParams({
+          subscriptionId: opts.subscription,
+          status: opts.status,
+        }),
+      ),
+    );
+    output.success(rows, { count: rows.length });
   });
 
 subscriptionChargesCommand
   .command("pending")
-  .description("List pending subscription charges")
-  .option("--limit <n>", "Items per page")
-  .option("--offset <n>", "Pagination offset")
+  .description("List pending and overdue subscription charges")
+  .option("--limit <n>", "Items per page, 1..100")
+  .option("--offset <n>", "Items to skip")
   .action(async (opts: PendingChargesOptions) => {
-    const data = await apiRequest(
+    const response = await apiRequest<unknown>(
       "GET",
       "/api/subscription-charges/pending",
       undefined,
       buildPendingChargesParams(opts),
     );
-    output.success(data);
+    const rows = chargeRows(response);
+    const wrapper = Array.isArray(response) ? {} : (response as Row);
+    output.success(rows, {
+      count: rows.length,
+      ...(wrapper.pagination as Row | undefined),
+      ...(wrapper.summary !== undefined && { summary: wrapper.summary }),
+    });
   });
 
 subscriptionChargesCommand
   .command("by-account")
   .description("List subscription charges for an account")
-  .argument("<account-id>", "Account ID")
-  .action(async (accountId: string) => {
-    const data = await apiRequest(
-      "GET",
-      resourcePath("/api/subscription-charges/by-account", accountId),
+  .argument("<account>", "Account name or id")
+  .action(async (ref: string) => {
+    const accountId = String(await resolveAccountId(ref));
+    const rows = chargeRows(
+      await apiRequest(
+        "GET",
+        resourcePath("/api/subscription-charges/by-account", accountId),
+      ),
     );
-    output.success(data);
+    output.success(rows, { count: rows.length });
   });
 
 subscriptionChargesCommand
@@ -63,7 +100,7 @@ subscriptionChargesCommand
       "POST",
       resourcePath("/api/subscription-charges", chargeId, "pay"),
     );
-    output.success(data);
+    output.success(stripHeavy(data));
   });
 
 subscriptionChargesCommand
@@ -75,7 +112,7 @@ subscriptionChargesCommand
       "POST",
       resourcePath("/api/subscription-charges", chargeId, "confirm"),
     );
-    output.success(data);
+    output.success(stripHeavy(data));
   });
 
 subscriptionChargesCommand
@@ -87,7 +124,7 @@ subscriptionChargesCommand
       "POST",
       resourcePath("/api/subscription-charges", chargeId, "mark-paid"),
     );
-    output.success(data);
+    output.success(stripHeavy(data));
   });
 
 subscriptionChargesCommand
@@ -99,5 +136,5 @@ subscriptionChargesCommand
       "POST",
       resourcePath("/api/subscription-charges", chargeId, "revert-payment"),
     );
-    output.success(data);
+    output.success(stripHeavy(data));
   });
