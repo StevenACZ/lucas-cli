@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
+import { stripHeavy } from "../../lib/views.js";
 import { resourcePath } from "../../lib/resource-path.js";
 
 export const markPaidCommand = new Command("mark-paid")
@@ -11,5 +12,5 @@ export const markPaidCommand = new Command("mark-paid")
       "POST",
       resourcePath("/api/subscriptions", id, "mark-paid"),
     );
-    output.success(data);
+    output.success(stripHeavy(data));
   });

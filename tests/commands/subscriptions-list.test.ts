@@ -51,51 +51,63 @@ describe("subscriptions list", () => {
     ).toEqual(subscriptions);
   });
 
-  it("keeps summary and pagination alongside the enriched items", () => {
+  it("returns the enriched items as data and pagination/summary as meta", () => {
     const pagination = { limit: 10, offset: 0, hasMore: true, total: 23 };
     const summary = { total: 23, monthlyTotal: 415.5 };
 
     const payload = buildSubscriptionListPayload(
-      { items: [{ id: "sub-1", isActive: true }], summary, pagination },
+      {
+        items: [{ id: "sub-1", isActive: true, logoBase64: "x" }],
+        summary,
+        pagination,
+      },
       [],
-    ) as Record<string, unknown>;
+    );
 
-    expect(payload.summary).toEqual(summary);
-    expect(payload.pagination).toEqual(pagination);
-    expect(payload.items).toEqual([
+    expect(payload?.meta).toEqual({ count: 1, ...pagination, summary });
+    expect(payload?.data).toEqual([
       expect.objectContaining({ id: "sub-1", computedStatus: "UNKNOWN" }),
     ]);
+    expect(payload?.data[0]).not.toHaveProperty("logoBase64");
   });
 
-  it("keeps emitting a bare array for legacy array responses", () => {
+  it("accepts legacy bare array responses", () => {
     const payload = buildSubscriptionListPayload(
       [{ id: "sub-1", isActive: true }],
       [],
     );
 
-    expect(Array.isArray(payload)).toBe(true);
+    expect(Array.isArray(payload?.data)).toBe(true);
+    expect(payload?.meta).toEqual({ count: 1 });
   });
 
   it("reports an unexpected response shape as null", () => {
     expect(buildSubscriptionListPayload({ nope: true }, [])).toBeNull();
   });
 
-  it("emits summary and pagination from the list command itself", async () => {
-    const pagination = { limit: 10, offset: 0, hasMore: true, total: 23 };
-    const summary = { total: 23 };
+  it("emits data and meta from the list command itself", async () => {
+    const pagination = { limit: 100, offset: 0, hasMore: false, total: 1 };
     apiRequest
       .mockResolvedValueOnce({
         items: [{ id: "sub-1", isActive: true }],
-        summary,
+        summary: { total: 1 },
         pagination,
       })
       .mockResolvedValueOnce([]);
 
-    await listSubscriptionsCommand.parseAsync([], { from: "user" });
+    await listSubscriptionsCommand.parseAsync(["--include-inactive"], {
+      from: "user",
+    });
 
-    expect(outputSuccess).toHaveBeenCalledWith(
-      expect.objectContaining({ summary, pagination }),
+    expect(apiRequest).toHaveBeenCalledWith(
+      "GET",
+      "/api/subscriptions",
+      undefined,
+      { limit: "100", offset: "0", includeInactive: "true" },
     );
+    const [data, meta] = outputSuccess.mock.calls[0];
+    expect(data).toHaveLength(1);
+    expect(meta).toMatchObject({ count: 1, hasMore: false, total: 1 });
   });
 
   it("builds backend subscription list filters", () => {

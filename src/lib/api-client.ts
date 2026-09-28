@@ -118,11 +118,15 @@ async function performRequest<T>(
 ): Promise<T> {
   const creds = loadCredentials();
   if (!creds) {
-    fail("Not authenticated. Run: lucas auth login");
+    fail("Not authenticated. Run: lucas auth login", undefined, {
+      code: "UNAUTHENTICATED",
+    });
   }
 
   if (creds.expiresAt && new Date(creds.expiresAt) <= new Date()) {
-    fail("Token expired. Run: lucas auth login");
+    fail("Token expired. Run: lucas auth login", undefined, {
+      code: "TOKEN_EXPIRED",
+    });
   }
 
   const apiUrl = getApiUrl(creds);

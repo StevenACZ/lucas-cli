@@ -1,15 +1,19 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
+import { requireYes } from "../../lib/errors.js";
 import { output } from "../../lib/output.js";
 import { resourcePath } from "../../lib/resource-path.js";
+import { stripHeavy } from "../../lib/views.js";
 
 export const deleteSubscriptionCommand = new Command("delete")
-  .description("Delete a subscription")
-  .argument("<id>", "Subscription ID")
-  .action(async (id: string) => {
+  .description("Delete a subscription (permanent)")
+  .argument("<id>", "Subscription id")
+  .option("--yes", "Confirm the permanent deletion")
+  .action(async (id: string, opts: { yes?: boolean }) => {
+    requireYes(opts.yes, "Deleting a subscription");
     const data = await apiRequest(
       "DELETE",
       resourcePath("/api/subscriptions", id),
     );
-    output.success(data);
+    output.success(stripHeavy(data));
   });

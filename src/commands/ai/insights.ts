@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
+import { stripHeavy } from "../../lib/views.js";
 
 export const aiInsightsCommand = new Command("insights").description(
   "Persisted AI financial insight",
@@ -11,7 +12,7 @@ aiInsightsCommand
   .description("Show the stored AI financial insight (null when none exists)")
   .action(async () => {
     const data = await apiRequest("GET", "/api/ai/insights");
-    output.success(data);
+    output.success(stripHeavy(data));
   });
 
 aiInsightsCommand
@@ -24,5 +25,5 @@ aiInsightsCommand
     const body: Record<string, unknown> = {};
     if (opts.period) body.period = String(opts.period).toUpperCase();
     const data = await apiRequest("POST", "/api/ai/insights/generate", body);
-    output.success(data);
+    output.success(stripHeavy(data));
   });

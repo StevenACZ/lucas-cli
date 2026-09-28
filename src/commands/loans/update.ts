@@ -1,7 +1,10 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
 import { buildBody } from "../../lib/body-builder.js";
+import { choice } from "../../lib/choices.js";
+import { resolveAccountId } from "../../lib/resolve.js";
+import { stripHeavy } from "../../lib/views.js";
 import { resourcePath } from "../../lib/resource-path.js";
 
 export const updateLoanCommand = new Command("update")
@@ -9,22 +12,32 @@ export const updateLoanCommand = new Command("update")
   .argument("<id>", "Loan ID")
   .option("--name <name>", "Loan name")
   .option("--principal <amount>", "Principal amount")
-  .option("--account-id <id>", "Payment account ID")
-  .option("--clear-account-id", "Clear payment account ID")
+  .option("--account <name|id>", "Default paying account name or id")
+  .addOption(new Option("--account-id <id>").hideHelp())
+  .option("--clear-account", "Unlink the paying account")
+  .addOption(new Option("--clear-account-id").hideHelp())
   .option("--is-primary", "Set as primary")
   .option("--no-is-primary", "Unset primary")
   .option("--is-archived", "Archive loan")
   .option("--no-is-archived", "Unarchive loan")
   .option("--first-due-date <date>", "First due date (YYYY-MM-DD)")
-  .option("--interval-unit <unit>", "Interval unit (DAY|WEEK|MONTH|YEAR)")
-  .option("--interval-count <n>", "Interval count")
+  .option(
+    "--interval-unit <unit>",
+    "DAY, WEEK, MONTH or YEAR",
+    choice(["DAY", "WEEK", "MONTH", "YEAR"]),
+  )
+  .option("--interval-count <n>", "Intervals between installments (integer)")
   .option("--agreed-installments <n>", "Total installments")
   .option("--clear-agreed-installments", "Clear agreed installments")
   .option("--target-payment <amount>", "Target payment amount")
   .option("--clear-target-payment", "Clear target payment")
-  .option("--interest-rate <rate>", "Interest rate")
+  .option("--interest-rate <rate>", "Interest rate percent")
   .option("--clear-interest-rate", "Clear interest rate")
-  .option("--interest-rate-unit <unit>", "Rate unit (ANNUAL|MONTHLY)")
+  .option(
+    "--interest-rate-unit <unit>",
+    "ANNUAL or MONTHLY",
+    choice(["ANNUAL", "MONTHLY"]),
+  )
   .option("--interest-enabled", "Enable interest")
   .option("--no-interest-enabled", "Disable interest")
   .option("--late-fee-amount <amount>", "Late fee amount")
@@ -33,13 +46,15 @@ export const updateLoanCommand = new Command("update")
   .option("--late-fee-enabled", "Enable late fees")
   .option("--no-late-fee-enabled", "Disable late fees")
   .action(async (id, opts) => {
+    opts.clearAccount ||= opts.clearAccountId;
+    opts.accountId = await resolveAccountId(opts.account ?? opts.accountId);
     const body = buildBody(opts, [
       { opt: "name", body: "name" },
       { opt: "principal", body: "principal", type: "number" },
       {
         opt: "accountId",
         body: "paymentAccountId",
-        clearOpt: "clearAccountId",
+        clearOpt: "clearAccount",
       },
       { opt: "isPrimary", body: "isPrimary", type: "boolean" },
       { opt: "isArchived", body: "isArchived", type: "boolean" },
@@ -76,5 +91,5 @@ export const updateLoanCommand = new Command("update")
       { opt: "lateFeeEnabled", body: "lateFeeEnabled", type: "boolean" },
     ]);
     const data = await apiRequest("PUT", resourcePath("/api/loans", id), body);
-    output.success(data);
+    output.success(stripHeavy(data));
   });

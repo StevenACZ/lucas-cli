@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
+import { stripHeavy } from "../../lib/views.js";
 
 interface ParseExpensesOptions {
   date?: string;
@@ -16,7 +17,7 @@ export async function runParseExpenses(
   if (opts.accountId) body.accountId = opts.accountId;
 
   const data = await apiRequest("POST", "/api/ai/parse-expenses", body);
-  output.success(data);
+  output.success(stripHeavy(data));
 }
 
 export const parseExpensesCommand = new Command("parse-expenses")

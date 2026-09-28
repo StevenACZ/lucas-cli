@@ -6,8 +6,10 @@ safe to publish.
 ## Rules
 
 - Communicate implementation details in English inside code and docs.
-- Keep CLI output JSON-compatible unless a command is intentionally
-  interactive.
+- Print exactly one JSON document on stdout per invocation through
+  `output.success(data, meta?)` or a thrown `CliError`; never `console.*` or a
+  plain `throw new Error` for validation (`invalidValue`, exit codes in
+  `src/lib/errors.ts`).
 - Do not expose backend internals, secrets, database URLs, npm tokens, service
   account files, or private deployment details.
 - Do not add long-lived npm token publishing. Use Trusted Publishing/OIDC and
@@ -27,8 +29,14 @@ safe to publish.
 - Plan limits and prices are backend-owned: pass backend error messages
   through and never hardcode plan numbers or prices; CLI does not implement
   billing.
-- Match public list commands to the backend response shape, including
-  pagination wrappers such as `{ items, summary, pagination }`.
+- List commands print `data` as an array; pagination and backend summaries go
+  in `meta` (`count` always; `limit/offset/hasMore` or `truncated`). Use
+  `fetchPage`/`fetchAll` when the endpoint takes limit/offset.
+- Accept account and category names wherever an id is taken
+  (`src/lib/resolve.ts`); keep every old `--*-id` flag as a hidden alias.
+- Money-moving creates offer `--dry-run`; writes return the compact view plus
+  balances from `accountsAfterWrite`. Permanent deletes require `--yes`.
+- Pass every raw backend object through `stripHeavy` before printing.
 - Build API paths with `resourcePath()` when an ID appears in the URL path.
 - Store local credentials under `~/.config/lucas` with private permissions.
 - Reject non-image and sensitive local paths before reading image inputs.

@@ -17,6 +17,15 @@ vi.mock("../../src/lib/output.js", () => ({
   },
 }));
 
+vi.mock("../../src/lib/resolve.js", () => ({
+  resolveAccountId: async (ref?: string) => ref && `id_${ref}`,
+}));
+
+vi.mock("../../src/lib/effects.js", () => ({
+  accountsAfterWrite: async (ids: Array<string | undefined>) =>
+    ids.filter(Boolean).map((id) => ({ id })),
+}));
+
 const { parseExpenseItem, payExpensesCommand } =
   await import("../../src/commands/accounts/pay-expenses.js");
 const { payExpenseCommand } =
@@ -42,7 +51,7 @@ describe("accounts pay-expenses batch", () => {
     expect(() => parseExpenseItem("tx_1=10=20")).toThrow(
       /Invalid --item value/,
     );
-    expect(() => parseExpenseItem("tx_1=abc")).toThrow(/Invalid numeric value/);
+    expect(() => parseExpenseItem("tx_1=abc")).toThrow(/positive amount/);
   });
 
   it("posts an atomic batch body with repeated --item flags", async () => {
@@ -51,11 +60,11 @@ describe("accounts pay-expenses batch", () => {
 
     await payExpensesCommand.parseAsync(
       [
-        "acc_123",
+        "Visa",
         "--source",
-        "ACCOUNT",
-        "--from-account-id",
-        "acc_456",
+        "account",
+        "--from-account",
+        "Soles",
         "--item",
         "tx_1",
         "--item",
@@ -66,17 +75,20 @@ describe("accounts pay-expenses batch", () => {
 
     expect(apiRequest).toHaveBeenCalledWith(
       "POST",
-      "/api/accounts/acc_123/pay-expenses",
+      "/api/accounts/id_Visa/pay-expenses",
       {
         source: "ACCOUNT",
-        fromAccountId: "acc_456",
+        fromAccountId: "id_Soles",
         items: [
           { transactionId: "tx_1" },
           { transactionId: "tx_2", amount: 50 },
         ],
       },
     );
-    expect(outputSuccess).toHaveBeenCalledWith(response);
+    expect(outputSuccess).toHaveBeenCalledWith({
+      ...response,
+      accounts: [{ id: "id_Visa" }, { id: "id_Soles" }],
+    });
   });
 
   it("posts a single pay-expense body", async () => {
@@ -84,7 +96,7 @@ describe("accounts pay-expenses batch", () => {
 
     await payExpenseCommand.parseAsync(
       [
-        "acc_123",
+        "Visa",
         "--transaction-id",
         "tx_1",
         "--source",
@@ -97,12 +109,52 @@ describe("accounts pay-expenses batch", () => {
 
     expect(apiRequest).toHaveBeenCalledWith(
       "POST",
-      "/api/accounts/acc_123/pay-expense",
+      "/api/accounts/id_Visa/pay-expense",
       {
         transactionId: "tx_1",
         source: "CASHBACK",
         amount: 25,
       },
     );
+  });
+
+  it("requires a funding account for --source ACCOUNT", async () => {
+    await expect(
+      payExpenseCommand.parseAsync(
+        ["Visa", "--transaction-id", "tx_1", "--source", "ACCOUNT"],
+        { from: "user" },
+      ),
+    ).rejects.toMatchObject({ code: "INVALID_VALUE" });
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+
+  it("prints the request and writes nothing with --dry-run", async () => {
+    await payExpenseCommand.parseAsync(
+      [
+        "Visa",
+        "--transaction-id",
+        "tx_1",
+        "--source",
+        "ACCOUNT",
+        "--from-account-id",
+        "acc_456",
+        "--dry-run",
+      ],
+      { from: "user" },
+    );
+
+    expect(apiRequest).not.toHaveBeenCalled();
+    expect(outputSuccess).toHaveBeenCalledWith({
+      dryRun: true,
+      request: {
+        method: "POST",
+        path: "/api/accounts/id_Visa/pay-expense",
+        body: {
+          transactionId: "tx_1",
+          source: "ACCOUNT",
+          fromAccountId: "id_acc_456",
+        },
+      },
+    });
   });
 });

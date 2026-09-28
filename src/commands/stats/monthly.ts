@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
+import { stripHeavy } from "../../lib/views.js";
 
 export const monthlyCommand = new Command("monthly")
   .description("Get monthly statistics")
@@ -16,5 +17,5 @@ export const monthlyCommand = new Command("monthly")
       undefined,
       params,
     );
-    output.success(data);
+    output.success(stripHeavy(data));
   });

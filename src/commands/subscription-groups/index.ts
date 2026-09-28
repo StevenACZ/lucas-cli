@@ -1,8 +1,11 @@
 import { Command } from "commander";
 import { buildBody } from "../../lib/body-builder.js";
 import { apiRequest } from "../../lib/api-client.js";
+import { requireYes } from "../../lib/errors.js";
 import { output } from "../../lib/output.js";
 import { resourcePath } from "../../lib/resource-path.js";
+import { extractItems } from "../../lib/types.js";
+import { stripHeavy } from "../../lib/views.js";
 
 interface ReorderOptions {
   ids: string;
@@ -23,8 +26,13 @@ subscriptionGroupsCommand
   .command("list")
   .description("List subscription groups")
   .action(async () => {
-    const data = await apiRequest("GET", "/api/subscription-groups");
-    output.success(data);
+    const rows = stripHeavy(
+      extractItems<Record<string, unknown>>(
+        await apiRequest("GET", "/api/subscription-groups"),
+        ["items", "groups"],
+      ) ?? [],
+    );
+    output.success(rows, { count: rows.length });
   });
 
 subscriptionGroupsCommand
@@ -40,7 +48,7 @@ subscriptionGroupsCommand
       { opt: "icon", body: "icon" },
     ]);
     const data = await apiRequest("POST", "/api/subscription-groups", body);
-    output.success(data);
+    output.success(stripHeavy(data));
   });
 
 subscriptionGroupsCommand
@@ -65,19 +73,21 @@ subscriptionGroupsCommand
       resourcePath("/api/subscription-groups", id),
       body,
     );
-    output.success(data);
+    output.success(stripHeavy(data));
   });
 
 subscriptionGroupsCommand
   .command("delete")
-  .description("Delete a subscription group")
+  .description("Delete a subscription group (permanent)")
   .argument("<id>", "Subscription group ID")
-  .action(async (id: string) => {
+  .option("--yes", "Confirm the permanent deletion")
+  .action(async (id: string, opts: { yes?: boolean }) => {
+    requireYes(opts.yes, "Deleting a subscription group");
     const data = await apiRequest(
       "DELETE",
       resourcePath("/api/subscription-groups", id),
     );
-    output.success(data);
+    output.success(stripHeavy(data));
   });
 
 subscriptionGroupsCommand
@@ -88,5 +98,5 @@ subscriptionGroupsCommand
     const data = await apiRequest("POST", "/api/subscription-groups/reorder", {
       ids: parseGroupIds(opts.ids),
     });
-    output.success(data);
+    output.success(stripHeavy(data));
   });

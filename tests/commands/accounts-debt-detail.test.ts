@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const apiRequest = vi.fn();
+const resolveAccount = vi.fn();
 
-vi.mock("../../src/lib/api-client.js", () => ({
-  apiRequest,
+vi.mock("../../src/lib/api-client.js", () => ({ apiRequest }));
+vi.mock("../../src/lib/output.js", () => ({
+  output: { success: vi.fn(), error: vi.fn() },
 }));
+vi.mock("../../src/lib/resolve.js", () => ({ resolveAccount }));
 
 const { buildDebtDetailParams, runDebtDetail } =
   await import("../../src/commands/accounts/debt-detail.js");
@@ -12,21 +15,18 @@ const { buildDebtDetailParams, runDebtDetail } =
 describe("accounts debt-detail", () => {
   beforeEach(() => {
     apiRequest.mockReset();
+    resolveAccount.mockReset();
   });
 
-  it("buildDebtDetailParams applies AI-friendly defaults", () => {
-    expect(buildDebtDetailParams({})).toEqual({
-      mode: "current_cycle",
-      limit: "100",
-      offset: "0",
-    });
+  it("leaves the mode to the backend when not passed", () => {
+    expect(buildDebtDetailParams({})).toEqual({ limit: "100", offset: "0" });
   });
 
-  it("buildDebtDetailParams forwards all explicit flags", () => {
+  it("forwards all explicit flags", () => {
     expect(
       buildDebtDetailParams({
         mode: "custom",
-        anchorDate: "2026-04-19",
+        anchorDate: "2026-04-15",
         startDate: "2026-04-01",
         endDate: "2026-04-15",
         search: "uber",
@@ -36,7 +36,7 @@ describe("accounts debt-detail", () => {
       }),
     ).toEqual({
       mode: "custom",
-      anchorDate: "2026-04-19",
+      anchorDate: "2026-04-15",
       startDate: "2026-04-01",
       endDate: "2026-04-15",
       searchText: "uber",
@@ -46,18 +46,41 @@ describe("accounts debt-detail", () => {
     });
   });
 
-  it("runDebtDetail calls the breakdown endpoint with id and params", async () => {
+  it("calls the breakdown endpoint for the resolved card", async () => {
+    resolveAccount.mockResolvedValue({
+      id: "acc_1",
+      name: "Visa",
+      type: "CREDIT",
+      statementClosingDay: 20,
+    });
     apiRequest.mockResolvedValue({ summary: { currentDebt: 186.64 } });
-    await runDebtDetail("acc_1", { mode: "current_cycle" });
+
+    await runDebtDetail("Visa", { mode: "current_cycle" });
+
+    expect(resolveAccount).toHaveBeenCalledWith("Visa");
     expect(apiRequest).toHaveBeenCalledWith(
       "GET",
       "/api/accounts/acc_1/credit-debt-breakdown",
       undefined,
-      expect.objectContaining({
-        mode: "current_cycle",
-        limit: "100",
-        offset: "0",
-      }),
+      { mode: "current_cycle", limit: "100", offset: "0" },
     );
+  });
+
+  it("explains how to set a missing statement closing day", async () => {
+    resolveAccount.mockResolvedValue({
+      id: "acc_1",
+      name: "Visa",
+      type: "CREDIT",
+      statementClosingDay: null,
+    });
+
+    await expect(
+      runDebtDetail("Visa", { mode: "last_statement" }),
+    ).rejects.toMatchObject({
+      code: "INVALID_VALUE",
+      exitCode: 2,
+      hint: expect.stringContaining("--statement-closing-day"),
+    });
+    expect(apiRequest).not.toHaveBeenCalled();
   });
 });

@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { buildBody } from "../../lib/body-builder.js";
 import { output } from "../../lib/output.js";
+import { stripHeavy } from "../../lib/views.js";
 
 export const settingsCommand = new Command("settings").description(
   "Manage user settings",
@@ -12,7 +13,7 @@ settingsCommand
   .description("Get current user settings")
   .action(async () => {
     const data = await apiRequest("GET", "/api/settings");
-    output.success(data);
+    output.success(stripHeavy(data));
   });
 
 settingsCommand
@@ -59,5 +60,5 @@ settingsCommand
       },
     ]);
     const data = await apiRequest("PUT", "/api/settings", body);
-    output.success(data);
+    output.success(stripHeavy(data));
   });

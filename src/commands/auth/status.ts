@@ -1,7 +1,9 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { getApiUrl, loadCredentials } from "../../lib/config.js";
+import { CliError } from "../../lib/errors.js";
 import { output } from "../../lib/output.js";
+import { stripHeavy } from "../../lib/views.js";
 
 export const statusCommand = new Command("status")
   .description("Show authentication status")
@@ -12,7 +14,10 @@ export const statusCommand = new Command("status")
   .action(async (opts: { remote?: boolean }) => {
     const creds = loadCredentials();
     if (!creds) {
-      output.error("Not authenticated. Run: lucas auth login");
+      throw new CliError({
+        code: "UNAUTHENTICATED",
+        message: "Not authenticated. Run: lucas auth login",
+      });
     }
 
     const expired =
@@ -33,5 +38,5 @@ export const statusCommand = new Command("status")
     }
 
     const me = await apiRequest<unknown>("GET", "/api/auth/me");
-    output.success({ ...status, remote: me });
+    output.success({ ...status, remote: stripHeavy(me) });
   });

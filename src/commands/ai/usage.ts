@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
+import { stripHeavy } from "../../lib/views.js";
 
 interface AIUsageOptions {
   type?: string;
@@ -9,7 +10,7 @@ interface AIUsageOptions {
 export async function runAIUsage(opts: AIUsageOptions) {
   const query = opts.type ? { type: opts.type } : undefined;
   const data = await apiRequest("GET", "/api/ai/usage", undefined, query);
-  output.success(data);
+  output.success(stripHeavy(data));
 }
 
 export const aiUsageCommand = new Command("usage")

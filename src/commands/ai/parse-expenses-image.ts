@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { readImagePayloads } from "../../lib/ai-contract.js";
 import { output } from "../../lib/output.js";
+import { stripHeavy } from "../../lib/views.js";
 
 interface ParseExpensesImageOptions {
   date?: string;
@@ -27,7 +28,7 @@ export async function runParseExpensesImage(
   if (opts.accountId) body.accountId = opts.accountId;
 
   const data = await apiRequest("POST", "/api/ai/parse-expenses-image", body);
-  output.success(data);
+  output.success(stripHeavy(data));
 }
 
 export const parseExpensesImageCommand = new Command("parse-expenses-image")
