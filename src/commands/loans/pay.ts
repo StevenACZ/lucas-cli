@@ -13,7 +13,7 @@ import {
 } from "../../lib/number-parser.js";
 import { accountsAfterWrite } from "../../lib/effects.js";
 import { output } from "../../lib/output.js";
-import { resolveAccountId } from "../../lib/resolve.js";
+import { resolveAccountId, resolveLoanId } from "../../lib/resolve.js";
 import { resourcePath } from "../../lib/resource-path.js";
 import { stripHeavy } from "../../lib/views.js";
 
@@ -96,7 +96,8 @@ export async function executePayLoan(
   };
 }
 
-export async function runPayLoan(id: string, opts: PayLoanOptions) {
+export async function runPayLoan(ref: string, opts: PayLoanOptions) {
+  const id = await resolveLoanId(ref);
   const accountId = await resolveAccountId(opts.account ?? opts.accountId);
   const resolved = { ...opts, accountId };
   if (opts.dryRun) {
@@ -119,7 +120,7 @@ export async function runPayLoan(id: string, opts: PayLoanOptions) {
 
 export const payLoanCommand = new Command("pay")
   .description("Make a loan payment")
-  .argument("<id>", "Loan ID")
+  .argument("<loan>", "Loan name or id")
   .requiredOption("--amount <amount>", "Amount paid, in the payment currency")
   .option("--currency <code>", "Payment currency (default: the loan currency)")
   .option(

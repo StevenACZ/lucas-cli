@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { buildBody } from "../../lib/body-builder.js";
 import { parseFiniteNumber } from "../../lib/number-parser.js";
@@ -125,6 +125,7 @@ export const updateTradeCommand = new Command("trade-update")
 export const deleteTradeCommand = new Command("trade-delete")
   .description("Delete an investment trade")
   .argument("<trade-id>", "Trade ID")
+  .addOption(new Option("--yes").hideHelp())
   .action(async (tradeId: string) => {
     const data = await apiRequest(
       "DELETE",

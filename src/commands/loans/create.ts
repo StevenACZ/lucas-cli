@@ -35,6 +35,7 @@ export const createLoanCommand = new Command("create")
   .option("--late-fee-amount <amount>", "Late fee amount")
   .option("--late-fee-grace-days <n>", "Late fee grace days")
   .option("--late-fee-enabled", "Enable late fees")
+  .option("--dry-run", "Resolve and validate, print the request, write nothing")
   .action(async (opts) => {
     opts.accountId = await resolveAccountId(opts.account ?? opts.accountId);
     const body = buildBody(opts, [
@@ -54,6 +55,13 @@ export const createLoanCommand = new Command("create")
       { opt: "lateFeeGraceDays", body: "lateFeeGraceDays", type: "number" },
       { opt: "lateFeeEnabled", body: "lateFeeEnabled", type: "boolean" },
     ]);
+    if (opts.dryRun) {
+      output.success({
+        dryRun: true,
+        request: { method: "POST", path: "/api/loans", body },
+      });
+      return;
+    }
     const data = await apiRequest("POST", "/api/loans", body);
     output.success(stripHeavy(data));
   });

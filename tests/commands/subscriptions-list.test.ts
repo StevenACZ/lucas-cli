@@ -71,6 +71,51 @@ describe("subscriptions list", () => {
     expect(payload?.data[0]).not.toHaveProperty("logoBase64");
   });
 
+  it("maps summary.upcomingPayments to compact subscriptions", () => {
+    const payload = buildSubscriptionListPayload(
+      {
+        items: [],
+        summary: {
+          total: 1,
+          upcomingPayments: [
+            {
+              id: "sub-1",
+              userId: "user-1",
+              name: "Netflix",
+              amount: "44.9",
+              currency: "PEN",
+              nextBilling: "2026-10-15T00:00:00.000Z",
+              createdAt: "2026-01-01T00:00:00.000Z",
+              accountId: "acc-1",
+              account: {
+                id: "acc-1",
+                name: "Visa",
+                bank: "BCP",
+                currency: "PEN",
+              },
+              group: { id: "grp-1", name: "Streaming" },
+            },
+          ],
+        },
+      },
+      [],
+    );
+
+    expect(payload?.meta.summary).toEqual({
+      total: 1,
+      upcomingPayments: [
+        {
+          id: "sub-1",
+          name: "Netflix",
+          amount: 44.9,
+          currency: "PEN",
+          nextBilling: "2026-10-15T00:00:00.000Z",
+          account: { id: "acc-1", name: "Visa", currency: "PEN" },
+        },
+      ],
+    });
+  });
+
   it("accepts legacy bare array responses", () => {
     const payload = buildSubscriptionListPayload(
       [{ id: "sub-1", isActive: true }],

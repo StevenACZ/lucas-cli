@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-28
+
+### Added
+
+- `lucas guide [topic]`: step-by-step recipes with the real traps for
+  `expense`, `card-purchase`, `card-payment`, `transfer`, `loan-payment`,
+  `subscription-charge`, `undo` and `bulk-import`. Every write step shows
+  `--dry-run` first, and a test parses every step against the real command
+  tree so a guide cannot drift from the CLI.
+- `UNKNOWN_OPTION` and `UNKNOWN_COMMAND` errors carry a did-you-mean `hint`
+  (prefix match first, then a small edit distance), e.g. `--from` suggests
+  `--from-account`.
+- Loans and subscriptions take a name or an id in every `<loan>` and
+  `<subscription>` argument (`loans get|update|pay|mark-paid|unmark-paid|delete`,
+  `subscriptions get|update|mark-paid|delete`), with the same `AMBIGUOUS` and
+  `NOT_FOUND` errors as accounts. The permanent `delete` commands only accept
+  the exact name or the id, never a partial match.
+- `--dry-run` on `loans create`, `loans mark-paid`, `loans unmark-paid`,
+  `subscriptions create`, `subscriptions mark-paid` and
+  `subscription-charges pay|mark-paid`.
+- `transactions create-many` sends each row's `notes`.
+
+### Changed
+
+- `subscriptions list` returns `meta.summary.upcomingPayments` as compact
+  `{id, name, amount, currency, nextBilling, account}` rows.
+- `subscriptions mark-paid`, `subscription-charges pay` and
+  `subscription-charges mark-paid` describe whether they book an expense.
+
+### Fixed
+
+- Soft deletes (`transactions delete`, `transfers delete`,
+  `investments trade-delete|cash-delete`) accept `--yes` as a no-op instead of
+  failing with `UNKNOWN_OPTION`.
+
 ## [1.0.0] - 2026-09-28
 
 ### Breaking

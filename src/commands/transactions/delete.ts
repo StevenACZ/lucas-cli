@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { accountsAfterWrite } from "../../lib/effects.js";
 import { output } from "../../lib/output.js";
@@ -10,6 +10,7 @@ type Row = Record<string, unknown>;
 export const deleteTransactionCommand = new Command("delete")
   .description("Move a transaction to the trash (restore with lucas trash)")
   .argument("<id>", "Transaction id")
+  .addOption(new Option("--yes").hideHelp())
   .action(async (id: string) => {
     const path = resourcePath("/api/transactions", id);
     const transaction = await apiRequest<Row>("GET", path);

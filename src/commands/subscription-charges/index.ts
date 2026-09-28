@@ -93,13 +93,18 @@ subscriptionChargesCommand
 
 subscriptionChargesCommand
   .command("pay")
-  .description("Pay a subscription charge using its linked account")
+  .description(
+    "Pay a subscription charge (books an expense on its linked account, if any)",
+  )
   .argument("<charge-id>", "Subscription charge ID")
-  .action(async (chargeId: string) => {
-    const data = await apiRequest(
-      "POST",
-      resourcePath("/api/subscription-charges", chargeId, "pay"),
-    );
+  .option("--dry-run", "Resolve and validate, print the request, write nothing")
+  .action(async (chargeId: string, opts: { dryRun?: boolean }) => {
+    const path = resourcePath("/api/subscription-charges", chargeId, "pay");
+    if (opts.dryRun) {
+      output.success({ dryRun: true, request: { method: "POST", path } });
+      return;
+    }
+    const data = await apiRequest("POST", path);
     output.success(stripHeavy(data));
   });
 
@@ -117,13 +122,20 @@ subscriptionChargesCommand
 
 subscriptionChargesCommand
   .command("mark-paid")
-  .description("Mark a subscription charge paid manually")
+  .description("Mark a subscription charge paid without booking an expense")
   .argument("<charge-id>", "Subscription charge ID")
-  .action(async (chargeId: string) => {
-    const data = await apiRequest(
-      "POST",
-      resourcePath("/api/subscription-charges", chargeId, "mark-paid"),
+  .option("--dry-run", "Resolve and validate, print the request, write nothing")
+  .action(async (chargeId: string, opts: { dryRun?: boolean }) => {
+    const path = resourcePath(
+      "/api/subscription-charges",
+      chargeId,
+      "mark-paid",
     );
+    if (opts.dryRun) {
+      output.success({ dryRun: true, request: { method: "POST", path } });
+      return;
+    }
+    const data = await apiRequest("POST", path);
     output.success(stripHeavy(data));
   });
 

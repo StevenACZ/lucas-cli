@@ -6,6 +6,7 @@ import {
 import type { LoanDetails, LoanInstallment } from "../../lib/types.js";
 import { output } from "../../lib/output.js";
 import {
+  buildPayLoanPayload,
   executePayLoan,
   type PayLoanExecutionResult,
   type PayLoanOptions,
@@ -13,7 +14,7 @@ import {
 import { apiRequest } from "../../lib/api-client.js";
 import { accountsAfterWrite } from "../../lib/effects.js";
 import { invalidValue } from "../../lib/errors.js";
-import { resolveAccountId } from "../../lib/resolve.js";
+import { resolveAccountId, resolveLoanId } from "../../lib/resolve.js";
 import { resourcePath } from "../../lib/resource-path.js";
 import { stripHeavy } from "../../lib/views.js";
 
@@ -24,6 +25,7 @@ export interface MarkPaidLoanOptions {
   notes?: string;
   paidAt?: string;
   verified?: boolean;
+  dryRun?: boolean;
 }
 
 function summarizeSettlement(installment: LoanInstallment | undefined) {
@@ -35,10 +37,7 @@ function summarizeSettlement(installment: LoanInstallment | undefined) {
   };
 }
 
-export async function executeMarkPaidLoan(
-  id: string,
-  opts: MarkPaidLoanOptions,
-): Promise<PayLoanExecutionResult & Record<string, unknown>> {
+async function planMarkPaidLoan(id: string, opts: MarkPaidLoanOptions) {
   const loan = await apiRequest<LoanDetails>(
     "GET",
     resourcePath("/api/loans", id),
@@ -57,6 +56,14 @@ export async function executeMarkPaidLoan(
     paidAt: opts.paidAt,
     verified: opts.verified,
   };
+  return { installment, payOpts };
+}
+
+export async function executeMarkPaidLoan(
+  id: string,
+  opts: MarkPaidLoanOptions,
+): Promise<PayLoanExecutionResult & Record<string, unknown>> {
+  const { installment, payOpts } = await planMarkPaidLoan(id, opts);
   const result = await executePayLoan(id, payOpts);
   const afterInstallment = result.loan?.installments.find((item) =>
     installment.id !== undefined
@@ -77,8 +84,30 @@ export async function executeMarkPaidLoan(
   };
 }
 
-export async function runMarkPaidLoan(id: string, opts: MarkPaidLoanOptions) {
+export async function runMarkPaidLoan(ref: string, opts: MarkPaidLoanOptions) {
+  const id = await resolveLoanId(ref);
   const accountId = await resolveAccountId(opts.account ?? opts.accountId);
+  if (opts.dryRun) {
+    const { installment, payOpts } = await planMarkPaidLoan(id, {
+      ...opts,
+      accountId,
+    });
+    output.success({
+      dryRun: true,
+      request: {
+        method: "POST",
+        path: resourcePath("/api/loans", id, "pay"),
+        body: buildPayLoanPayload(payOpts),
+      },
+      installment: {
+        id: installment.id,
+        sequence: installment.sequence,
+        dueDate: installment.dueDate,
+        remainingAmount: payOpts.amount,
+      },
+    });
+    return;
+  }
   const result = await executeMarkPaidLoan(id, { ...opts, accountId });
   output.success({
     ...stripHeavy(result),
@@ -87,14 +116,17 @@ export async function runMarkPaidLoan(id: string, opts: MarkPaidLoanOptions) {
 }
 
 export const markPaidLoanCommand = new Command("mark-paid")
-  .description("Mark the next pending loan installment as paid")
-  .argument("<id>", "Loan ID")
+  .description(
+    "Pay the whole remaining of the next pending installment (same payment as loans pay)",
+  )
+  .argument("<loan>", "Loan name or id")
   .option("--currency <code>", "Payment currency")
   .option("--account <name|id>", "Paying account name or id")
   .addOption(new Option("--account-id <id>").hideHelp())
   .option("--notes <notes>", "Payment notes")
   .option("--paid-at <date>", "Payment day (YYYY-MM-DD)")
   .option("--verified", "Re-read the loan after paying and verify server state")
+  .option("--dry-run", "Resolve and validate, print the request, write nothing")
   .addHelpText(
     "after",
     "\nExample:\n  lucas loans mark-paid <id> --verified\n" +

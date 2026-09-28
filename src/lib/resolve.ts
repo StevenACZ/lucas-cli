@@ -1,10 +1,16 @@
-// Accounts and categories can be referenced by id or by name everywhere.
+// Accounts, categories, loans and subscriptions can be referenced by id or by
+// name everywhere.
 // Resolution is exact first, then a unique partial match; anything else is a
 // structured NOT_FOUND / AMBIGUOUS error listing the candidates.
 import { apiRequest } from "./api-client.js";
 import { CliError, invalidValue } from "./errors.js";
 import { extractItems } from "./types.js";
-import { accountView, categoryView } from "./views.js";
+import {
+  accountView,
+  categoryView,
+  loanRef,
+  subscriptionRef,
+} from "./views.js";
 
 type Row = Record<string, unknown>;
 
@@ -20,12 +26,25 @@ export function normalizeName(value: unknown): string {
     .trim();
 }
 
+type Kind = "account" | "category" | "loan" | "subscription";
+
+const PLURAL: Record<Kind, string> = {
+  account: "accounts",
+  category: "categories",
+  loan: "loans",
+  subscription: "subscriptions",
+};
+
 let accountsCache: Promise<Row[]> | undefined;
 let categoriesCache: Promise<Row[]> | undefined;
+let loansCache: Promise<Row[]> | undefined;
+let subscriptionsCache: Promise<Row[]> | undefined;
 
 export function resetResolverCache(): void {
   accountsCache = undefined;
   categoriesCache = undefined;
+  loansCache = undefined;
+  subscriptionsCache = undefined;
 }
 
 export function loadAccounts(): Promise<Row[]> {
@@ -42,13 +61,33 @@ export function loadCategories(): Promise<Row[]> {
   return categoriesCache;
 }
 
+function loadLoans(): Promise<Row[]> {
+  loansCache ??= apiRequest<unknown>("GET", "/api/loans").then((response) =>
+    (extractItems<Row>(response, ["items", "loans"]) ?? []).map((row) =>
+      row.loan && typeof row.loan === "object" ? (row.loan as Row) : row,
+    ),
+  );
+  return loansCache;
+}
+
+function loadSubscriptions(): Promise<Row[]> {
+  subscriptionsCache ??= apiRequest<unknown>(
+    "GET",
+    "/api/subscriptions",
+    undefined,
+    { limit: "100", includeInactive: "true" },
+  ).then((response) => extractItems<Row>(response) ?? []);
+  return subscriptionsCache;
+}
+
 async function pick<T extends Row>(
-  kind: "account" | "category",
+  kind: Kind,
   ref: string,
   rows: T[],
   keys: (row: T) => string[],
   view: (row: T) => Row,
   sameNameTieBreak?: (matches: T[]) => Promise<T>,
+  exactOnly = false,
 ): Promise<T> {
   const wanted = normalizeName(ref);
   if (!wanted) throw invalidValue(`Empty ${kind} reference`);
@@ -57,7 +96,7 @@ async function pick<T extends Row>(
 
   const exact = rows.filter((row) => keys(row).some((key) => key === wanted));
   const matches =
-    exact.length > 0
+    exact.length > 0 || exactOnly
       ? exact
       : rows.filter((row) =>
           keys(row)
@@ -73,7 +112,7 @@ async function pick<T extends Row>(
   if (matches.length > 1) {
     throw new CliError({
       code: "AMBIGUOUS",
-      message: `"${ref}" matches ${matches.length} ${kind === "account" ? "accounts" : "categories"}`,
+      message: `"${ref}" matches ${matches.length} ${PLURAL[kind]}`,
       hint: `Use the exact name or the id`,
       details: { candidates: matches.map(view) },
     });
@@ -82,10 +121,7 @@ async function pick<T extends Row>(
   throw new CliError({
     code: "NOT_FOUND",
     message: `No ${kind} matches "${ref}"`,
-    hint:
-      kind === "account"
-        ? "Run: lucas accounts list"
-        : "Run: lucas categories list",
+    hint: `Run: lucas ${PLURAL[kind]} list`,
     details: { available: rows.map((row) => row.name) },
   });
 }
@@ -109,6 +145,38 @@ export async function resolveAccountId(
 ): Promise<string | undefined> {
   if (ref === undefined) return undefined;
   return String((await resolveAccount(ref)).id);
+}
+
+export async function resolveLoanId(
+  ref: string,
+  { exact = false }: { exact?: boolean } = {},
+): Promise<string> {
+  const loan = await pick(
+    "loan",
+    ref,
+    await loadLoans(),
+    (row) => [normalizeName(row.name)],
+    loanRef,
+    undefined,
+    exact,
+  );
+  return String(loan.id);
+}
+
+export async function resolveSubscriptionId(
+  ref: string,
+  { exact = false }: { exact?: boolean } = {},
+): Promise<string> {
+  const subscription = await pick(
+    "subscription",
+    ref,
+    await loadSubscriptions(),
+    (row) => [normalizeName(row.name)],
+    subscriptionRef,
+    undefined,
+    exact,
+  );
+  return String(subscription.id);
 }
 
 function pickCategory(
