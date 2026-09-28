@@ -73,6 +73,28 @@ export function accountRef(account: Row | undefined): Row | null {
   });
 }
 
+export function loanRef(loan: Row): Row {
+  return compact({
+    id: loan.id,
+    name: loan.name,
+    principal: toNumber(loan.principal) ?? undefined,
+    currency: loan.currency,
+  });
+}
+
+export function subscriptionRef(subscription: Row): Row {
+  return compact({
+    id: subscription.id,
+    name: subscription.name,
+    amount: toNumber(subscription.amount),
+    currency: subscription.currency,
+    nextBilling: subscription.nextBilling,
+    account:
+      accountRef(asRow(subscription.account)) ??
+      (subscription.accountId ? { id: subscription.accountId } : null),
+  });
+}
+
 export function transactionView(transaction: Row): Row {
   const account = asRow(transaction.account);
   const category = asRow(transaction.category);

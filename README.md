@@ -36,13 +36,14 @@ server-side and deletes the local credentials.
 
 ## Commands
 
-Accounts and categories are accepted by name or id everywhere (see
+Accounts, categories, loans and subscriptions are accepted by name or id everywhere (see
 [Name resolution](#name-resolution)). Run `lucas commands` for the full JSON
 catalog or `lucas <group> <command> --help` for one command.
 
 ```bash
 lucas overview                                  # accounts, totals, this month, pending charges
 lucas commands                                  # every command, argument and option as JSON
+lucas guide [topic]                             # write recipes and their traps
 
 lucas accounts list [--include-archived] [--full]
 lucas accounts get "ITK Soles"
@@ -75,26 +76,27 @@ lucas transfers delete <id>                     # to the trash
 lucas categories list [--type INCOME|EXPENSE] [--search food]
 
 lucas subscriptions list [--include-inactive] [--type SERVICE]
-lucas subscriptions get <id>
-lucas subscriptions create --name Netflix --amount 44.90 --frequency MONTHLY --billing-day 15 --account "Visa Signature"
-lucas subscriptions update <id> --billing-day 30
-lucas subscriptions delete <id> --yes
-lucas subscriptions mark-paid <id>
+lucas subscriptions get Netflix
+lucas subscriptions create --name Netflix --amount 44.90 --frequency MONTHLY --billing-day 15 --account "Visa Signature" [--dry-run]
+lucas subscriptions update Netflix --billing-day 30
+lucas subscriptions delete Netflix --yes
+lucas subscriptions mark-paid Netflix [--dry-run]    # pays the current charge
 lucas subscriptions calendar --month 2026-05 --type SUBSCRIPTION --frequency MONTHLY
 lucas subscriptions services
 lucas subscription-groups list|create|update|delete|reorder
 lucas subscription-charges list [--subscription <id>] [--status PENDING|OVERDUE|PAID]
 lucas subscription-charges pending --limit 10
 lucas subscription-charges by-account "Visa Signature"
-lucas subscription-charges pay|confirm|mark-paid|revert-payment <charge-id>
+lucas subscription-charges pay|mark-paid <charge-id> [--dry-run]
+lucas subscription-charges confirm|revert-payment <charge-id>
 
 lucas loans list
-lucas loans get <id>
-lucas loans create|update ... [--account "ITK Soles"]
-lucas loans pay <id> --amount 750 --account "ITK Soles" [--verified] [--dry-run]
-lucas loans mark-paid <id> --verified
-lucas loans unmark-paid <id>
-lucas loans delete <id> --yes
+lucas loans get "Car loan"
+lucas loans create|update ... [--account "ITK Soles"]   # create takes --dry-run
+lucas loans pay "Car loan" --amount 750 --account "ITK Soles" [--verified] [--dry-run]
+lucas loans mark-paid "Car loan" --verified [--dry-run]
+lucas loans unmark-paid "Car loan" [--dry-run]
+lucas loans delete "Car loan" --yes
 
 lucas stats summary|overview|monthly|by-category
 lucas settings get|update
@@ -125,11 +127,10 @@ Notes:
 - `accounts debt-detail` modes `current_cycle` and `last_statement` need a
   statement closing day: `lucas accounts update <card> --statement-closing-day <1..31>`.
 - `transactions create-many` reads a JSON array of
-  `{account, type, amount, description, category?, date?}` from a file or `-`
+  `{account, type, amount, description, category?, date?, notes?}` from a file or `-`
   for stdin. Every item is validated before anything is written; items are
   sent 50 per request per account, and movements that already exist (same day,
-  type, amount and description) come back in `skipped`. `notes` is not
-  supported by the bulk endpoint.
+  type, amount and description) come back in `skipped`.
 - `transfers create --fee <amount>` records the fee as a separate EXPENSE on
   the source account in the same database transaction as the transfer
   (`--fee-description`, default `Comisión: <description>`; `--fee-category`).
@@ -140,6 +141,11 @@ Notes:
   the investments feature enabled.
 
 ## For AI Agents
+
+Before any write, run `lucas guide` to list the recipes and
+`lucas guide <topic>` (`expense`, `card-purchase`, `card-payment`,
+`transfer`, `loan-payment`, `subscription-charge`, `undo`, `bulk-import`) for
+the exact commands, in order, and the mistakes to avoid.
 
 ### Output contract
 
@@ -179,7 +185,8 @@ so stdout always parses. It is compact when piped and pretty on a TTY
   `UNKNOWN_COMMAND` (with `commands`), `MISSING_OPTION`, `INVALID_VALUE`,
   `AMBIGUOUS`, `NOT_FOUND`, `CONFIRMATION_REQUIRED`, `UNAUTHORIZED`,
   `TOKEN_EXPIRED`, `CLI_READ_ONLY`, `RATE_LIMITED`, `TIMEOUT`, or the backend
-  code. `error.details` may carry `requestId` and `retryAfterSeconds`.
+  code. `UNKNOWN_OPTION` and `UNKNOWN_COMMAND` hints name the closest valid
+  option or command (`Did you mean --from-account?`). `error.details` may carry `requestId` and `retryAfterSeconds`.
 
 ### Exit codes
 
@@ -195,7 +202,7 @@ so stdout always parses. It is compact when piped and pretty on a TTY
 ### Name resolution
 
 `--account`, `--from-account`, `--to-account`, `--category` and positional
-`<account>` arguments take a name or an id. Matching ignores accents and case
+`<account>`, `<loan>` and `<subscription>` arguments take a name or an id. Matching ignores accents and case
 (`"itk dolares"` finds `ITK Dólares`), also accepts `"<bank> <name>"`, and
 falls back to a unique partial match. Several matches fail with `AMBIGUOUS`
 and list `details.candidates`; no match fails with `NOT_FOUND` and lists the
@@ -214,12 +221,13 @@ next to the UTC `date`.
 
 ### Safety flags
 
-- `--dry-run` on money-moving creates resolves names, validates, prints
+- `--dry-run` on money-moving writes resolves names, validates, prints
   `{dryRun: true, request: {method, path, body}, ...}` and writes nothing.
 - Permanent deletes (`accounts delete`, `loans delete`, `subscriptions delete`,
   `subscription-groups delete`, `trash permanent-delete-*`, `trash empty-*`)
   need `--yes`; without it they fail with `CONFIRMATION_REQUIRED`. Deleting a
-  transaction or transfer moves it to the trash and needs no confirmation.
+  transaction or transfer moves it to the trash and needs no confirmation
+  (`--yes` is accepted and ignored).
 - `loans pay --verified` and `loans mark-paid --verified` re-read the loan
   after the payment is accepted. An accepted payment always exits `0`, so never
   retry on the verification alone; read `data.verification.verified`: `true`

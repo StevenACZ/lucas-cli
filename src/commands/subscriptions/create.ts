@@ -50,12 +50,13 @@ export const createSubscriptionCommand = new Command("create")
     "--reminder-time-minutes <minutes>",
     "Reminder time as local minutes since midnight",
   )
+  .option("--dry-run", "Resolve and validate, print the request, write nothing")
   .addHelpText(
     "after",
     `
 Examples:
   lucas subscriptions create --name Netflix --amount 44.90 --frequency MONTHLY \\
-    --billing-day 15 --account "Visa Signature" --category Subscriptions
+    --billing-day 15 --account "Visa Signature" --category Subscriptions --dry-run
 `,
   )
   .action(async (opts) => {
@@ -93,6 +94,13 @@ Examples:
         type: "number",
       },
     ]);
+    if (opts.dryRun) {
+      output.success({
+        dryRun: true,
+        request: { method: "POST", path: "/api/subscriptions", body },
+      });
+      return;
+    }
     const data = await apiRequest("POST", "/api/subscriptions", body);
     output.success(stripHeavy(data));
   });

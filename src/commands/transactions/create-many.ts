@@ -30,11 +30,10 @@ async function planItem(raw: unknown, index: number): Promise<PlannedItem> {
     throw invalidValue("Each item must be an object");
   }
   const input = raw as Row;
-  if (input.notes !== undefined) {
-    throw invalidValue(
-      "notes is not supported by bulk create; add them afterwards with lucas transactions update",
-    );
+  if (input.notes !== undefined && typeof input.notes !== "string") {
+    throw invalidValue("notes must be a string", { value: input.notes });
   }
+  const notes = text(input.notes);
   const accountInput = text(input.account) ?? text(input.accountId);
   if (!accountInput) throw invalidValue("account is required (name or id)");
   const type = String(input.type ?? "")
@@ -69,6 +68,7 @@ async function planItem(raw: unknown, index: number): Promise<PlannedItem> {
       type,
       description,
       ...(category && { categoryId: category.id }),
+      ...(notes && { notes }),
     },
   };
 }
@@ -148,7 +148,7 @@ export const createManyTransactionsCommand = new Command("create-many")
     `
 Item fields: account (name or id), type (INCOME|EXPENSE), amount (positive, up
 to 2 decimals), description, category (name, slug or id, optional), date
-(today, yesterday or YYYY-MM-DD, default today). notes is not supported.
+(today, yesterday or YYYY-MM-DD, default today), notes (optional).
 
 Items are grouped per account and sent ${BULK_MAX} per request. Existing movements
 with the same day, type, amount and description are skipped, not duplicated.

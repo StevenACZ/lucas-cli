@@ -3,13 +3,17 @@ import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
 import { buildBody } from "../../lib/body-builder.js";
 import { choice } from "../../lib/choices.js";
-import { resolveAccountId, resolveCategoryId } from "../../lib/resolve.js";
+import {
+  resolveAccountId,
+  resolveCategoryId,
+  resolveSubscriptionId,
+} from "../../lib/resolve.js";
 import { stripHeavy } from "../../lib/views.js";
 import { resourcePath } from "../../lib/resource-path.js";
 
 export const updateSubscriptionCommand = new Command("update")
   .description("Update a subscription")
-  .argument("<id>", "Subscription ID")
+  .argument("<subscription>", "Subscription name or id")
   .option("--name <name>", "Subscription name")
   .option("--amount <amount>", "Amount")
   .option(
@@ -71,7 +75,8 @@ export const updateSubscriptionCommand = new Command("update")
     "after",
     "\nExample:\n  lucas subscriptions update <id> --billing-day 30\n",
   )
-  .action(async (id: string, opts) => {
+  .action(async (ref: string, opts) => {
+    const id = await resolveSubscriptionId(ref);
     opts.clearAccount ||= opts.clearAccountId;
     opts.clearCategory ||= opts.clearCategoryId;
     opts.accountId = await resolveAccountId(opts.account ?? opts.accountId);

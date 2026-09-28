@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { apiRequest } from "../../lib/api-client.js";
 import { buildBody } from "../../lib/body-builder.js";
 import { parseFiniteNumber } from "../../lib/number-parser.js";
@@ -144,6 +144,7 @@ export const updateCashAdjustmentCommand = new Command("cash-update")
 export const deleteCashAdjustmentCommand = new Command("cash-delete")
   .description("Delete an investment cash adjustment")
   .argument("<adjustment-id>", "Cash adjustment ID")
+  .addOption(new Option("--yes").hideHelp())
   .action(async (adjustmentId: string) => {
     const data = await apiRequest(
       "DELETE",

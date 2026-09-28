@@ -57,6 +57,7 @@ const items = [
     amount: 100,
     description: "Reembolso",
     date: "2026-09-03",
+    notes: "Viaje Cusco",
   },
 ];
 
@@ -103,7 +104,7 @@ describe("transactions create-many", () => {
               type: "EXPENSE",
               amount: 1,
               description: "d",
-              notes: "n",
+              notes: 5,
             },
           ]),
         ],
@@ -151,6 +152,7 @@ describe("transactions create-many", () => {
               amount: 100,
               type: "INCOME",
               description: "Reembolso",
+              notes: "Viaje Cusco",
             },
           ],
         },

@@ -3,13 +3,13 @@ import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
 import { buildBody } from "../../lib/body-builder.js";
 import { choice } from "../../lib/choices.js";
-import { resolveAccountId } from "../../lib/resolve.js";
+import { resolveAccountId, resolveLoanId } from "../../lib/resolve.js";
 import { stripHeavy } from "../../lib/views.js";
 import { resourcePath } from "../../lib/resource-path.js";
 
 export const updateLoanCommand = new Command("update")
   .description("Update a loan")
-  .argument("<id>", "Loan ID")
+  .argument("<loan>", "Loan name or id")
   .option("--name <name>", "Loan name")
   .option("--principal <amount>", "Principal amount")
   .option("--account <name|id>", "Default paying account name or id")
@@ -45,7 +45,8 @@ export const updateLoanCommand = new Command("update")
   .option("--late-fee-grace-days <n>", "Late fee grace days")
   .option("--late-fee-enabled", "Enable late fees")
   .option("--no-late-fee-enabled", "Disable late fees")
-  .action(async (id, opts) => {
+  .action(async (ref: string, opts) => {
+    const id = await resolveLoanId(ref);
     opts.clearAccount ||= opts.clearAccountId;
     opts.accountId = await resolveAccountId(opts.account ?? opts.accountId);
     const body = buildBody(opts, [

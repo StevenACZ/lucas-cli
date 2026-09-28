@@ -7,7 +7,7 @@ import {
   requireYes,
 } from "../../src/lib/errors.js";
 import { output } from "../../src/lib/output.js";
-import { runProgram } from "../../src/lib/program.js";
+import { closestMatch, runProgram } from "../../src/lib/program.js";
 
 let written: string[] = [];
 
@@ -123,6 +123,30 @@ describe("runProgram", () => {
     });
   });
 
+  it("suggests the closest option and command", async () => {
+    await expect(
+      runProgram(tree(), ["node", "lucas", "accounts", "list", "--ful"]),
+    ).rejects.toThrow("exit 2");
+    expect(stdoutJson()).toMatchObject({
+      error: {
+        code: "UNKNOWN_OPTION",
+        hint: "Did you mean --full? Run: lucas accounts list --help",
+        details: { validOptions: ["--full"] },
+      },
+    });
+
+    written = [];
+    await expect(
+      runProgram(tree(), ["node", "lucas", "accounts", "lst"]),
+    ).rejects.toThrow("exit 2");
+    expect(stdoutJson()).toMatchObject({
+      error: {
+        code: "UNKNOWN_COMMAND",
+        hint: "Did you mean list? Run: lucas accounts --help",
+      },
+    });
+  });
+
   it("serializes a thrown CliError from an action", async () => {
     const action = vi.fn(() => {
       throw new CliError({ code: "AMBIGUOUS", message: "Two matches" });
@@ -136,5 +160,23 @@ describe("runProgram", () => {
       ok: false,
       error: { code: "AMBIGUOUS", message: "Two matches" },
     });
+  });
+});
+
+describe("closestMatch", () => {
+  const options = ["--from-account", "--to-account", "--amount", "--fee"];
+
+  it("prefers a prefix match", () => {
+    expect(closestMatch("--from", options)).toBe("--from-account");
+    expect(closestMatch("--to=x", options)).toBe("--to-account");
+  });
+
+  it("falls back to a small edit distance", () => {
+    expect(closestMatch("--amout", options)).toBe("--amount");
+    expect(closestMatch("--free", options)).toBe("--fee");
+  });
+
+  it("suggests nothing when nothing is close", () => {
+    expect(closestMatch("--description", options)).toBeUndefined();
   });
 });

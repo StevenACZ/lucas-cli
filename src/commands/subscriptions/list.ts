@@ -11,7 +11,7 @@ import {
   type Subscription,
   type SubscriptionCharge,
 } from "../../lib/types.js";
-import { stripHeavy } from "../../lib/views.js";
+import { stripHeavy, subscriptionRef } from "../../lib/views.js";
 
 type Row = Record<string, unknown>;
 
@@ -40,12 +40,22 @@ export function buildSubscriptionListPayload(
     enrichSubscriptionsWithCharges(subscriptions, charges) as unknown as Row[],
   );
   const wrapper = Array.isArray(response) ? {} : (response as Row);
+  const summary = wrapper.summary as Row | undefined;
   return {
     data,
     meta: {
       count: data.length,
       ...(wrapper.pagination as Row | undefined),
-      ...(wrapper.summary !== undefined && { summary: wrapper.summary }),
+      ...(summary !== undefined && {
+        summary: Array.isArray(summary?.upcomingPayments)
+          ? {
+              ...summary,
+              upcomingPayments: (summary.upcomingPayments as Row[]).map(
+                subscriptionRef,
+              ),
+            }
+          : summary,
+      }),
     },
   };
 }

@@ -27,6 +27,11 @@ vi.mock("../../src/lib/output.js", () => ({
   },
 }));
 
+vi.mock("../../src/lib/resolve.js", () => ({
+  resolveAccountId: async (ref?: string) => ref,
+  resolveLoanId: async (ref: string) => (ref === "Car loan" ? "loan_1" : ref),
+}));
+
 const { buildPayLoanPayload, executePayLoan, runPayLoan } =
   await import("../../src/commands/loans/pay.js");
 const { executeMarkPaidLoan, runMarkPaidLoan } =
@@ -242,6 +247,45 @@ describe("loan commands", () => {
     expect(payload.verification.reason).toBe(
       "remaining_balance_did_not_drop_as_expected",
     );
+  });
+
+  it("runPayLoan resolves the loan name and prints the request on --dry-run", async () => {
+    await runPayLoan("Car loan", { amount: "350", dryRun: true });
+
+    expect(transport).not.toHaveBeenCalled();
+    expect(outputSuccess).toHaveBeenCalledWith({
+      dryRun: true,
+      request: {
+        method: "POST",
+        path: "/api/loans/loan_1/pay",
+        body: { payAmount: 350 },
+      },
+    });
+  });
+
+  it("runMarkPaidLoan --dry-run reads the loan and writes nothing", async () => {
+    transport.mockImplementation(async (method, path) => {
+      if (method === "GET" && path === "/api/loans/loan_1") return unpaidLoan;
+      throw new Error(`Unexpected request: ${method} ${path}`);
+    });
+
+    await runMarkPaidLoan("Car loan", { dryRun: true });
+
+    expect(transport).toHaveBeenCalledTimes(1);
+    expect(outputSuccess).toHaveBeenCalledWith({
+      dryRun: true,
+      request: {
+        method: "POST",
+        path: "/api/loans/loan_1/pay",
+        body: { payAmount: 100 },
+      },
+      installment: {
+        id: "inst_1",
+        sequence: 1,
+        dueDate: "2026-04-01",
+        remainingAmount: 100,
+      },
+    });
   });
 
   it("runMarkPaidLoan succeeds when the payment applied but verification failed", async () => {

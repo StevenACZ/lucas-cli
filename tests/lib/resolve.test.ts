@@ -10,6 +10,8 @@ const {
   resolveAccountId,
   resolveCategory,
   resolveCategoryFilterIds,
+  resolveLoanId,
+  resolveSubscriptionId,
 } = await import("../../src/lib/resolve.js");
 
 const accounts = [
@@ -36,6 +38,34 @@ const categories = [
   },
 ];
 
+const loans = [
+  {
+    loan: {
+      id: "loan_1",
+      name: "Car loan",
+      principal: "9000",
+      currency: "PEN",
+    },
+    remainingAmount: 4000,
+  },
+  {
+    loan: { id: "loan_2", name: "Carlos", principal: "500", currency: "USD" },
+    remainingAmount: 500,
+  },
+];
+
+const subscriptions = [
+  {
+    id: "sub_1",
+    name: "Netflix",
+    amount: "44.9",
+    currency: "PEN",
+    nextBilling: "2026-10-15T00:00:00.000Z",
+    userId: "user_1",
+    account: { id: "acc_3", name: "Visa Signature", currency: "PEN" },
+  },
+];
+
 let lastUse: Record<string, string> = {};
 
 beforeEach(() => {
@@ -51,6 +81,11 @@ beforeEach(() => {
     ) => {
       if (path === "/api/accounts") return { accounts };
       if (path === "/api/categories") return categories;
+      if (path === "/api/loans") return loans;
+      if (path === "/api/subscriptions") {
+        expect(query).toEqual({ limit: "100", includeInactive: "true" });
+        return { items: subscriptions, pagination: { hasMore: false } };
+      }
       if (path === "/api/transactions") {
         const date = lastUse[query?.categoryIds ?? ""];
         return { items: date ? [{ date }] : [] };
@@ -131,5 +166,45 @@ describe("resolve categories", () => {
     expect(await resolveCategoryFilterIds("food")).toBe(
       "cat_food_default,cat_food_custom",
     );
+  });
+});
+
+describe("resolve loans and subscriptions", () => {
+  it("passes an exact id through before matching names", async () => {
+    expect(await resolveLoanId("loan_2")).toBe("loan_2");
+  });
+
+  it("matches the name ignoring case", async () => {
+    expect(await resolveLoanId("car LOAN")).toBe("loan_1");
+    expect(await resolveSubscriptionId("netflix")).toBe("sub_1");
+  });
+
+  it("lists compact candidates when a name is ambiguous", async () => {
+    await expect(resolveLoanId("car")).rejects.toMatchObject({
+      code: "AMBIGUOUS",
+      message: '"car" matches 2 loans',
+      details: {
+        candidates: [
+          { id: "loan_1", name: "Car loan", principal: 9000, currency: "PEN" },
+          { id: "loan_2", name: "Carlos", principal: 500, currency: "USD" },
+        ],
+      },
+    });
+  });
+
+  it("takes a unique partial name only when exact is not required", async () => {
+    expect(await resolveLoanId("carl")).toBe("loan_2");
+    await expect(resolveLoanId("carl", { exact: true })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    expect(await resolveLoanId("CARLOS", { exact: true })).toBe("loan_2");
+  });
+
+  it("reports NOT_FOUND with the available names", async () => {
+    await expect(resolveSubscriptionId("Spotify")).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      hint: "Run: lucas subscriptions list",
+      details: { available: ["Netflix"] },
+    });
   });
 });
