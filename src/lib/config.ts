@@ -9,6 +9,7 @@ import {
 } from "fs";
 import { homedir } from "os";
 import { join } from "path";
+import { invalidValue } from "./errors.js";
 
 export type DeviceScope = "READ_ONLY" | "FULL";
 
@@ -29,24 +30,64 @@ export function normalizeApiUrl(apiUrl: string): string {
   return apiUrl.trim().replace(/\/+$/, "");
 }
 
-let warnedApiUrlOverride = false;
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+let warnedApiUrl = false;
+
+function validateApiUrl(apiUrl: string, source: string): string {
+  const normalized = normalizeApiUrl(apiUrl);
+  let parsed: URL;
+  try {
+    parsed = new URL(normalized);
+  } catch {
+    throw invalidValue(`${source} is not a valid URL: ${normalized}`, {
+      source,
+    });
+  }
+  const insecureAllowed =
+    LOOPBACK_HOSTS.has(parsed.hostname) ||
+    process.env.LUCAS_ALLOW_INSECURE_API === "1";
+  if (
+    parsed.protocol !== "https:" &&
+    !(parsed.protocol === "http:" && insecureAllowed)
+  ) {
+    throw invalidValue(
+      `${source} must use https:// (http is only allowed for localhost, 127.0.0.1 and ::1, or with LUCAS_ALLOW_INSECURE_API=1): ${normalized}`,
+      { source },
+    );
+  }
+  return normalized;
+}
+
+function warnApiUrl(apiUrl: string, issuedFor?: string): void {
+  const nonDefault = new URL(apiUrl).origin !== DEFAULT_API_URL;
+  const mismatch = issuedFor !== undefined && issuedFor !== apiUrl;
+  if (warnedApiUrl || (!nonDefault && !mismatch)) return;
+  warnedApiUrl = true;
+  const reissue = mismatch
+    ? ` The stored credentials were issued for ${issuedFor}; run \`lucas auth login\` against this API if this is intentional.`
+    : "";
+  process.stderr.write(
+    `Warning: using LucasApp API ${apiUrl}${nonDefault ? ` (default is ${DEFAULT_API_URL})` : ""}.${reissue}\n`,
+  );
+}
+
+export function checkApiUrl(apiUrl: string, source: string): string {
+  const checked = validateApiUrl(apiUrl, source);
+  warnApiUrl(checked);
+  return checked;
+}
 
 export function getApiUrl(creds?: Pick<Credentials, "apiUrl"> | null): string {
   const envUrl = process.env.LUCAS_API_URL;
-  if (
-    envUrl &&
-    creds?.apiUrl &&
-    normalizeApiUrl(envUrl) !== normalizeApiUrl(creds.apiUrl) &&
-    !warnedApiUrlOverride
-  ) {
-    // The stored token was issued by creds.apiUrl; sending it elsewhere is
-    // almost always a mistake (or an exfiltration attempt via env).
-    warnedApiUrlOverride = true;
-    process.stderr.write(
-      `Warning: LUCAS_API_URL overrides the API these credentials were issued for (${creds.apiUrl}). Run \`lucas auth login\` against the new API if this is intentional.\n`,
-    );
-  }
-  return normalizeApiUrl(envUrl ?? creds?.apiUrl ?? DEFAULT_API_URL);
+  const storedUrl = creds?.apiUrl ? normalizeApiUrl(creds.apiUrl) : undefined;
+  const apiUrl = envUrl
+    ? validateApiUrl(envUrl, "LUCAS_API_URL")
+    : storedUrl
+      ? validateApiUrl(storedUrl, "Stored credentials apiUrl")
+      : DEFAULT_API_URL;
+  warnApiUrl(apiUrl, storedUrl);
+  return apiUrl;
 }
 
 export function ensureConfigDir(): void {

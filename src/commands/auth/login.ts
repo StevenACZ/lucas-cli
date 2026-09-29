@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { hostname } from "os";
 import {
+  checkApiUrl,
   getApiUrl,
   saveCredentials,
   type DeviceScope,
@@ -8,6 +9,7 @@ import {
 import { output } from "../../lib/output.js";
 
 const POLL_INTERVAL_MS = 3000;
+const USER_CODE_PATTERN = /^[A-Z0-9-]{4,12}$/;
 
 interface DeviceAuthStart {
   deviceCode: string;
@@ -125,7 +127,10 @@ interface RunLoginOptions {
 }
 
 export async function runLogin(opts: RunLoginOptions = {}): Promise<void> {
-  const apiUrl = opts.apiUrl ?? getApiUrl();
+  const apiUrl =
+    opts.apiUrl !== undefined
+      ? checkApiUrl(opts.apiUrl, "--api-url")
+      : getApiUrl();
   const deviceName = opts.deviceName ?? `${hostname()} - CLI`;
 
   let res: Response;
@@ -163,7 +168,11 @@ export async function runLogin(opts: RunLoginOptions = {}): Promise<void> {
     );
   }
   const { deviceCode, userCode, expiresIn } = start;
-  if (typeof deviceCode !== "string" || typeof userCode !== "string") {
+  if (
+    typeof deviceCode !== "string" ||
+    typeof userCode !== "string" ||
+    !USER_CODE_PATTERN.test(userCode)
+  ) {
     output.error(
       `LucasApp API at ${apiUrl} returned an unexpected response. Try again later.`,
       502,

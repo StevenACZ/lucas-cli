@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Security
+
+- API URLs from `LUCAS_API_URL`, `auth login --api-url` and stored credentials
+  must use `https://`; plain `http://` is accepted only for `localhost`,
+  `127.0.0.1` and `::1`, or with `LUCAS_ALLOW_INSECURE_API=1`.
+- A single stderr warning is printed whenever the CLI talks to an API other
+  than `https://api.lucasapp.app`, including when `LUCAS_API_URL` overrides
+  the API the stored credentials were issued for.
+- `auth login` rejects a device `userCode` outside the expected format instead
+  of printing it.
+
 ## [1.1.0] - 2026-09-28
 
 ### Added

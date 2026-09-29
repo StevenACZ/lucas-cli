@@ -9,7 +9,8 @@ const stderrWrite = vi
   .spyOn(process.stderr, "write")
   .mockImplementation(() => true);
 
-vi.mock("../../src/lib/config.js", () => ({
+vi.mock("../../src/lib/config.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../src/lib/config.js")>()),
   getApiUrl: () => "https://api.lucasapp.app",
   saveCredentials,
 }));
@@ -27,12 +28,12 @@ const futureExpiry = new Date(
   Date.now() + 90 * 24 * 60 * 60 * 1000,
 ).toISOString();
 
-function startResponse() {
+function startResponse(userCode = "ABCD-2345") {
   return {
     ok: true,
     json: async () => ({
       deviceCode: "secret-poll-code",
-      userCode: "ABCD-2345",
+      userCode,
       expiresIn: 900,
     }),
   };
@@ -187,5 +188,39 @@ describe("auth login (device-auth v2)", () => {
     ).rejects.toThrow(
       "Cannot reach LucasApp API at http://localhost:3000. Check your connection or use --api-url https://api.lucasapp.app",
     );
+  });
+
+  it("rejects a plain http --api-url before sending any request", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      runLogin({
+        apiUrl: "http://evil.example",
+        deviceName: "Mac CLI",
+        pollIntervalMs: 1,
+      }),
+    ).rejects.toThrow(/--api-url must use https:\/\//);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a userCode outside the expected format without printing it", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(startResponse("\x1b[2Jevil code"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      runLogin({
+        apiUrl: "https://api.lucasapp.app",
+        deviceName: "Mac CLI",
+        pollIntervalMs: 1,
+      }),
+    ).rejects.toThrow(/unexpected response/);
+
+    const stderr = stderrWrite.mock.calls.map((call) => call[0]).join("");
+    expect(stderr).not.toContain("evil code");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
