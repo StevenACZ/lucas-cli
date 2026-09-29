@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-09-29
+
 ### Security
 
 - API URLs from `LUCAS_API_URL`, `auth login --api-url` and stored credentials
@@ -14,6 +16,8 @@ All notable changes to this project will be documented in this file.
   the API the stored credentials were issued for.
 - `auth login` rejects a device `userCode` outside the expected format instead
   of printing it.
+- `auth logout` clears local credentials even when the stored API URL is
+  rejected, skipping only the remote revoke.
 
 ## [1.1.0] - 2026-09-28
 
