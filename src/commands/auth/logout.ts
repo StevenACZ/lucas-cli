@@ -10,8 +10,14 @@ export async function runLogout(): Promise<void> {
   const creds = loadCredentials();
   let revoked = false;
 
-  if (creds?.token) {
-    const apiUrl = getApiUrl(creds);
+  let apiUrl: string | null;
+  try {
+    apiUrl = creds?.token ? getApiUrl(creds) : null;
+  } catch {
+    apiUrl = null;
+  }
+
+  if (creds?.token && apiUrl) {
     const response = await fetch(`${apiUrl}/api/cli/logout`, {
       method: "POST",
       headers: {
