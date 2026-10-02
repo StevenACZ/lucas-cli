@@ -24,6 +24,8 @@ vi.mock("../../src/lib/output.js", () => ({
 }));
 
 const { executePayLoan } = await import("../../src/commands/loans/pay.js");
+const { executeMarkPaidLoan } =
+  await import("../../src/commands/loans/mark-paid.js");
 
 const unpaidLoan = {
   id: "loan_1",
@@ -55,6 +57,58 @@ describe("loans pay --verified when the verification read fails", () => {
     outputError.mockClear();
     outputSuccess.mockClear();
   });
+
+  it.each(["pay", "mark-paid"])(
+    "verifies a backdated %s against the payment day's balance",
+    async (command) => {
+      const readDates: (string | null)[] = [];
+      let paid = false;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string, init: { method: string; body?: string }) => {
+          if (init.method === "POST") {
+            expect(JSON.parse(init.body!)).toMatchObject({
+              payAmount: 600,
+              paidAt: "2026-04-01",
+            });
+            paid = true;
+            return jsonResponse({ paymentId: "pay_1" });
+          }
+          const paymentDate = new URL(url).searchParams.get("paymentDate");
+          readDates.push(paymentDate);
+          return jsonResponse({
+            ...unpaidLoan,
+            installments: [
+              {
+                ...unpaidLoan.installments[0],
+                dueAmount: 600,
+                lateFeeAdded: !paid && paymentDate === null ? 15 : 0,
+                paidAmount: paid ? 600 : 0,
+                status: paid ? "PAID" : "PENDING",
+              },
+            ],
+            payments: paid ? [{ id: "pay_1", loanAmount: 600 }] : [],
+          });
+        }),
+      );
+
+      const opts = { paidAt: "2026-04-01", verified: true };
+      const result =
+        command === "pay"
+          ? await executePayLoan("loan_1", { ...opts, amount: 600 })
+          : await executeMarkPaidLoan("loan_1", opts);
+
+      expect(result.verification).toMatchObject({
+        verified: true,
+        expectedLoanReduction: 600,
+        actualLoanReduction: 600,
+        lateFeesAdded: 0,
+      });
+      expect(readDates).toEqual(
+        Array(command === "pay" ? 2 : 3).fill("2026-04-01"),
+      );
+    },
+  );
 
   it("keeps the persisted payment instead of exiting when the read times out", async () => {
     let loanReads = 0;

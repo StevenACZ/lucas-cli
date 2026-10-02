@@ -1,14 +1,16 @@
-import { mkdtemp, rm, stat } from "fs/promises";
+import { mkdtemp, readFile, rm, stat } from "fs/promises";
 import { tmpdir } from "os";
-import { join } from "path";
+import { join, relative } from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("config credential storage", () => {
   let tempHome: string | undefined;
+  const originalConfigDir = process.env.LUCAS_CONFIG_DIR;
   const originalLucasApiUrl = process.env.LUCAS_API_URL;
   const originalAllowInsecure = process.env.LUCAS_ALLOW_INSECURE_API;
 
   beforeEach(async () => {
+    delete process.env.LUCAS_CONFIG_DIR;
     delete process.env.LUCAS_API_URL;
     delete process.env.LUCAS_ALLOW_INSECURE_API;
     tempHome = await mkdtemp(join(tmpdir(), "lucas-cli-home-"));
@@ -19,6 +21,11 @@ describe("config credential storage", () => {
   });
 
   afterEach(async () => {
+    if (originalConfigDir === undefined) {
+      delete process.env.LUCAS_CONFIG_DIR;
+    } else {
+      process.env.LUCAS_CONFIG_DIR = originalConfigDir;
+    }
     vi.doUnmock("os");
     vi.resetModules();
     if (originalLucasApiUrl === undefined) {
@@ -41,6 +48,8 @@ describe("config credential storage", () => {
   it("stores credentials in a private directory and file", async () => {
     const { CONFIG_DIR, saveCredentials } =
       await import("../../src/lib/config.js");
+
+    expect(CONFIG_DIR).toBe(join(tempHome!, ".config", "lucas"));
 
     saveCredentials({
       token: "token",
@@ -154,4 +163,40 @@ describe("config credential storage", () => {
     expect(getApiUrl()).toBe("https://api.lucasapp.app");
     expect(stderrWrite).not.toHaveBeenCalled();
   });
+  it.each([false, true])(
+    "isolates credential reads, writes and deletion with a config override (relative=%s)",
+    async (useRelative) => {
+      const defaultConfig = await import("../../src/lib/config.js");
+      const credentials = {
+        token: "test-default-token",
+        apiUrl: "https://example.test",
+        deviceName: "Test",
+        expiresAt: "2099-01-01T00:00:00Z",
+      };
+      defaultConfig.saveCredentials(credentials);
+      const defaultFile = join(defaultConfig.CONFIG_DIR, "credentials.json");
+      const original = await readFile(defaultFile, "utf8");
+      const isolatedDir = join(tempHome!, "isolated");
+      process.env.LUCAS_CONFIG_DIR = useRelative
+        ? relative(process.cwd(), isolatedDir)
+        : isolatedDir;
+      vi.resetModules();
+      const isolated = await import("../../src/lib/config.js");
+      expect(isolated.CONFIG_DIR).toBe(isolatedDir);
+      expect(isolated.loadCredentials()).toBeNull();
+      const isolatedCredentials = {
+        ...credentials,
+        token: "test-isolated-token",
+      };
+      isolated.saveCredentials(isolatedCredentials);
+      expect(isolated.loadCredentials()).toEqual(isolatedCredentials);
+      expect((await stat(isolatedDir)).mode & 0o777).toBe(0o700);
+      expect(
+        (await stat(join(isolatedDir, "credentials.json"))).mode & 0o777,
+      ).toBe(0o600);
+      isolated.clearCredentials();
+      expect(isolated.loadCredentials()).toBeNull();
+      expect(await readFile(defaultFile, "utf8")).toBe(original);
+    },
+  );
 });

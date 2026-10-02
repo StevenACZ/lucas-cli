@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `LUCAS_CONFIG_DIR` selects an isolated private credentials directory for
+  development and automated tests.
+
+### Fixed
+
+- Verified loan payments compare the recorded payment with the loan balance,
+  including late fees and historical payment dates.
+- `loans mark-paid` uses the paying account's currency and accepts an exchange
+  rate, preserving the exact installment amount when currency cents round.
+
 ## [1.1.1] - 2026-09-29
 
 ### Security

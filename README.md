@@ -255,6 +255,7 @@ echo '[{"account":"ITK Soles","type":"EXPENSE","amount":12.5,"description":"Taxi
 - `LUCAS_TZ` sets the timezone for relative dates and `localDate`.
 - `LUCAS_API_URL` overrides the API base URL (advanced/local development
   only); credentials live in `~/.config/lucas/credentials.json`.
+- `LUCAS_CONFIG_DIR` selects an isolated configuration directory for advanced testing (resolved to an absolute path; default: `~/.config/lucas`).
 - API URLs must use `https://`; plain `http://` is accepted only for
   `localhost`, `127.0.0.1` and `::1`, or with `LUCAS_ALLOW_INSECURE_API=1`.
 - `LUCAS_DISABLE_UPDATE_NOTIFIER=1` suppresses the update banner (it is

@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from "fs";
 import { homedir } from "os";
-import { join } from "path";
+import { join, resolve } from "path";
 import { invalidValue } from "./errors.js";
 
 export type DeviceScope = "READ_ONLY" | "FULL";
@@ -22,7 +22,9 @@ export interface Credentials {
   scope?: DeviceScope;
 }
 
-export const CONFIG_DIR = join(homedir(), ".config", "lucas");
+export const CONFIG_DIR = process.env.LUCAS_CONFIG_DIR
+  ? resolve(process.env.LUCAS_CONFIG_DIR)
+  : join(homedir(), ".config", "lucas");
 const CREDENTIALS_FILE = join(CONFIG_DIR, "credentials.json");
 const DEFAULT_API_URL = "https://api.lucasapp.app";
 
