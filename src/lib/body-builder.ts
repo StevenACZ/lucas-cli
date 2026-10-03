@@ -10,6 +10,10 @@ interface FieldMapping {
   clearValue?: unknown;
 }
 
+function flagName(opt: string): string {
+  return `--${opt.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
+}
+
 export function buildBody(
   opts: Record<string, unknown>,
   fields: FieldMapping[],
@@ -22,7 +26,7 @@ export function buildBody(
     }
     const val = opts[opt];
     if (val !== undefined) {
-      if (type === "number") body[key] = parseFiniteNumber(val, `--${opt}`);
+      if (type === "number") body[key] = parseFiniteNumber(val, flagName(opt));
       else if (type === "boolean") body[key] = Boolean(val);
       else body[key] = val;
     }

@@ -27,15 +27,22 @@ vi.mock("../../src/lib/output.js", () => ({
   },
 }));
 
+let currentLoans: { id: string }[] = [];
+
 vi.mock("../../src/lib/resolve.js", () => ({
   resolveAccountId: async (ref?: string) => ref,
   resolveLoanId: async (ref: string) => (ref === "Car loan" ? "loan_1" : ref),
+  loadLoans: async () => currentLoans,
 }));
 
 const { buildPayLoanPayload, executePayLoan, runPayLoan } =
   await import("../../src/commands/loans/pay.js");
 const { executeMarkPaidLoan, runMarkPaidLoan } =
   await import("../../src/commands/loans/mark-paid.js");
+const { runCreateLoan } = await import("../../src/commands/loans/create.js");
+const { runUpdateLoan } = await import("../../src/commands/loans/update.js");
+const { runGetLoan } = await import("../../src/commands/loans/get.js");
+const { runReorderLoans } = await import("../../src/commands/loans/reorder.js");
 
 const unpaidLoan = {
   id: "loan_1",
@@ -558,5 +565,128 @@ describe("loan commands", () => {
     transport.mockResolvedValueOnce(unpaidLoan);
     await runMarkPaidLoan("loan_1", { dryRun: true });
     expect(transport.mock.calls[0][3]).toBeUndefined();
+  });
+});
+
+describe("loan appearance, disbursement, quote date and order", () => {
+  const base = {
+    name: "Car",
+    principal: "12000",
+    currency: "PEN",
+    firstDueDate: "2026-11-05",
+    intervalUnit: "MONTH",
+    intervalCount: "1",
+  };
+
+  beforeEach(() => {
+    transport.mockReset();
+    apiRequest.mockClear();
+    outputSuccess.mockReset();
+    outputError.mockClear();
+  });
+
+  it("create sends the icon with its color, primary and the disbursement", async () => {
+    transport.mockResolvedValue({ id: "loan_2" });
+    await runCreateLoan({
+      ...base,
+      icon: "car",
+      isPrimary: true,
+      disbursementAccount: "acc_1",
+      disbursementAmount: "3200",
+      disbursementExchangeRate: "3.75",
+    });
+    expect(transport).toHaveBeenCalledWith("POST", "/api/loans", {
+      name: "Car",
+      principal: 12000,
+      currency: "PEN",
+      firstDueDate: "2026-11-05",
+      intervalUnit: "MONTH",
+      intervalCount: 1,
+      isPrimary: true,
+      disbursementPayAmount: 3200,
+      disbursementExchangeRate: 3.75,
+      recordDisbursement: true,
+      disbursementAccountId: "acc_1",
+      iconName: "car",
+      iconColorHex: "#F59E0B",
+    });
+  });
+
+  it("create --dry-run writes nothing", async () => {
+    await runCreateLoan({ ...base, icon: "pet", dryRun: true });
+    expect(transport).not.toHaveBeenCalled();
+    expect(outputSuccess).toHaveBeenCalledWith({
+      dryRun: true,
+      request: {
+        method: "POST",
+        path: "/api/loans",
+        body: expect.objectContaining({
+          iconName: "pet",
+          iconColorHex: "#D97706",
+        }),
+      },
+    });
+  });
+
+  it("create rejects a disbursement amount without its account", async () => {
+    await expect(
+      runCreateLoan({ ...base, disbursementAmount: "100" }),
+    ).rejects.toMatchObject({ code: "INVALID_VALUE" });
+    expect(transport).not.toHaveBeenCalled();
+  });
+
+  it("update changes the icon and removes the photo", async () => {
+    transport.mockResolvedValue({ id: "loan_1" });
+    await runUpdateLoan("Car loan", { icon: "motorcycle", clearImage: true });
+    expect(transport).toHaveBeenCalledWith("PUT", "/api/loans/loan_1", {
+      iconName: "motorcycle",
+      iconColorHex: "#EA580C",
+      imageBase64: null,
+    });
+  });
+
+  it("get quotes a payment date and rejects a time", async () => {
+    transport.mockResolvedValue({ id: "loan_1" });
+    await runGetLoan("Car loan", { paymentDate: "2026-11-20" });
+    expect(transport).toHaveBeenCalledWith(
+      "GET",
+      "/api/loans/loan_1",
+      undefined,
+      { paymentDate: "2026-11-20" },
+    );
+    await runGetLoan("Car loan");
+    expect(transport).toHaveBeenLastCalledWith(
+      "GET",
+      "/api/loans/loan_1",
+      undefined,
+      undefined,
+    );
+    await expect(
+      runGetLoan("Car loan", { paymentDate: "2026-11-20T10:00" }),
+    ).rejects.toMatchObject({ code: "INVALID_VALUE" });
+  });
+
+  it("reorder puts the listed loans first and keeps the rest in their order", async () => {
+    currentLoans = [{ id: "loan_1" }, { id: "loan_5" }, { id: "loan_9" }];
+    transport.mockResolvedValue([]);
+    await runReorderLoans(["loan_9", "Car loan"]);
+    expect(transport).toHaveBeenCalledWith("POST", "/api/loans/reorder", {
+      ids: ["loan_9", "loan_1", "loan_5"],
+    });
+    await expect(runReorderLoans(["loan_1", "Car loan"])).rejects.toMatchObject(
+      {
+        code: "INVALID_VALUE",
+      },
+    );
+  });
+
+  it("reorder reports the order the backend returns", async () => {
+    currentLoans = [{ id: "loan_1" }, { id: "loan_9" }];
+    transport.mockResolvedValue([{ id: "loan_9" }, { id: "loan_1" }]);
+    await runReorderLoans(["loan_9", "loan_1"]);
+    expect(outputSuccess).toHaveBeenCalledWith(
+      [{ id: "loan_9" }, { id: "loan_1" }],
+      { count: 2 },
+    );
   });
 });

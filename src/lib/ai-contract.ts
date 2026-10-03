@@ -46,7 +46,7 @@ function isUnderPath(candidate: string, parent: string): boolean {
   return candidate === parent || candidate.startsWith(normalizedParent);
 }
 
-function assertNotSensitivePath(filePath: string): void {
+export function assertNotSensitivePath(filePath: string): void {
   const resolved = resolve(filePath);
   const home = homedir();
   const sensitiveParents = [

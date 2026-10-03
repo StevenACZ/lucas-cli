@@ -61,7 +61,7 @@ export function loadCategories(): Promise<Row[]> {
   return categoriesCache;
 }
 
-function loadLoans(): Promise<Row[]> {
+export function loadLoans(): Promise<Row[]> {
   loansCache ??= apiRequest<unknown>("GET", "/api/loans").then((response) =>
     (extractItems<Row>(response, ["items", "loans"]) ?? []).map((row) =>
       row.loan && typeof row.loan === "object" ? (row.loan as Row) : row,

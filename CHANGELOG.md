@@ -8,6 +8,34 @@ All notable changes to this project will be documented in this file.
 
 - `LUCAS_CONFIG_DIR` selects an isolated private credentials directory for
   development and automated tests.
+- Loans match the app: `loans create|update` take `--icon` (with the icon's
+  own color unless `--color` is passed) and `--image` (a JPEG photo, at most
+  256 KB and 1024 px per side); `loans update` also takes `--clear-icon` and
+  `--clear-image`. `loans icons` lists the 32 icon names.
+- `loans create --is-primary`, and `--disbursement-account` (with optional
+  `--disbursement-amount` and `--disbursement-exchange-rate`) to book the money
+  received as income when the loan is created.
+- `loans get --payment-date` quotes what is owed on a given date, late fees
+  included.
+- `loans reorder <loan...>` puts the listed loans first; the rest keep their
+  order.
+- `settings update` sets the exchange rate, automatic exchange,
+  excluded-account visibility, theme, primary timezone, language and the AI
+  options (`--ai-enabled`, `--ai-smart-features-enabled`,
+  `--ai-custom-context`).
+- `categories create --name --icon --color` creates a custom category
+  (`--dry-run` supported).
+- `accounts reorder <account...>` puts the listed accounts first; the rest keep
+  their order.
+- `accounts convert-type <account> --type` converts an account to another type
+  (`--credit-limit` and `--statement-closing-day` for CREDIT, `--dry-run`
+  supported).
+- `accounts permanent-delete <account> --yes` and `accounts empty-archive --yes`
+  permanently remove an account, or every archived account, with their
+  movements; exact name or id only.
+- `accounts create` accepts `--current-debt` (CREDIT) and `--excluded`.
+- `accounts list --include-archived` accepts `--limit` (1..50) and `--offset`
+  and reports the archived page in `meta.archived`.
 
 ### Fixed
 
@@ -15,6 +43,8 @@ All notable changes to this project will be documented in this file.
   including late fees and historical payment dates.
 - `loans mark-paid` uses the paying account's currency and accepts an exchange
   rate, preserving the exact installment amount when currency cents round.
+- A rejected number names the flag as typed (`--exchange-rate`, not
+  `--exchangeRate`), and `settings update` without options is an error.
 
 ## [1.1.1] - 2026-09-29
 

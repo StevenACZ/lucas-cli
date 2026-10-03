@@ -14,12 +14,14 @@ export interface CreateAccountOptions {
   currency?: string;
   balance?: string;
   creditLimit?: string;
+  currentDebt?: string;
   statementClosingDay?: string;
   cashbackEnabled?: boolean;
   cashbackRate?: string;
   color?: string;
   icon?: string;
   vault?: boolean;
+  excluded?: boolean;
 }
 
 export function buildCreateAccountBody(
@@ -45,6 +47,14 @@ export function buildCreateAccountBody(
     body.initialBalance = parseFiniteNumber(opts.balance, "--balance");
   if (opts.creditLimit !== undefined)
     body.creditLimit = parseFiniteNumber(opts.creditLimit, "--credit-limit");
+  if (opts.currentDebt !== undefined) {
+    if (type !== "CREDIT") {
+      throw invalidValue("--current-debt only applies when --type is CREDIT", {
+        value: opts.currentDebt,
+      });
+    }
+    body.currentDebt = parseFiniteNumber(opts.currentDebt, "--current-debt");
+  }
   if (opts.color) body.color = opts.color;
   if (opts.icon) body.icon = opts.icon;
   if (type === "CREDIT" && opts.statementClosingDay !== undefined) {
@@ -65,6 +75,7 @@ export function buildCreateAccountBody(
   if (opts.cashbackRate !== undefined)
     body.cashbackRate = parseFiniteNumber(opts.cashbackRate, "--cashback-rate");
   if (opts.vault !== undefined) body.vault = opts.vault;
+  if (opts.excluded !== undefined) body.excluded = opts.excluded;
   return body;
 }
 
@@ -87,6 +98,10 @@ export const createAccountCommand = new Command("create")
   .option("--balance <balance>", "Opening balance (number)")
   .option("--credit-limit <limit>", "Credit limit (required for CREDIT)")
   .option(
+    "--current-debt <amount>",
+    "Opening debt of an existing card (CREDIT only; 0 or negative allowed)",
+  )
+  .option(
     "--statement-closing-day <day>",
     "Statement closing day (1..31, CREDIT only)",
   )
@@ -101,6 +116,7 @@ export const createAccountCommand = new Command("create")
     "--vault",
     "Savings vault: counts toward totals but cannot fund payments (not CREDIT/INVESTMENT)",
   )
+  .option("--excluded", "Exclude from totals")
   .addHelpText(
     "after",
     `

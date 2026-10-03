@@ -25,6 +25,12 @@ import {
   archiveAccountCommand,
   unarchiveAccountCommand,
 } from "./commands/accounts/archive.js";
+import { reorderAccountsCommand } from "./commands/accounts/reorder.js";
+import { convertAccountTypeCommand } from "./commands/accounts/convert-type.js";
+import {
+  emptyArchiveCommand,
+  permanentDeleteAccountCommand,
+} from "./commands/accounts/permanent-delete.js";
 
 // Transactions
 import { listTransactionsCommand } from "./commands/transactions/list.js";
@@ -64,6 +70,8 @@ import { payLoanCommand } from "./commands/loans/pay.js";
 import { markPaidLoanCommand } from "./commands/loans/mark-paid.js";
 import { unmarkPaidLoanCommand } from "./commands/loans/unmark-paid.js";
 import { deleteLoanCommand } from "./commands/loans/delete.js";
+import { reorderLoansCommand } from "./commands/loans/reorder.js";
+import { loanIconsCommand } from "./commands/loans/icons.js";
 
 // Stats
 import { summaryCommand } from "./commands/stats/summary.js";
@@ -73,6 +81,7 @@ import { byCategoryCommand } from "./commands/stats/by-category.js";
 
 // Categories
 import { listCategoriesCommand } from "./commands/categories/list.js";
+import { createCategoryCommand } from "./commands/categories/create.js";
 
 // Exchange rate
 import { convertCommand } from "./commands/exchange-rate/convert.js";
@@ -128,6 +137,10 @@ export async function buildProgram(): Promise<Command> {
   accounts.addCommand(balanceHistoryCommand);
   accounts.addCommand(archiveAccountCommand);
   accounts.addCommand(unarchiveAccountCommand);
+  accounts.addCommand(reorderAccountsCommand);
+  accounts.addCommand(convertAccountTypeCommand);
+  accounts.addCommand(permanentDeleteAccountCommand);
+  accounts.addCommand(emptyArchiveCommand);
 
   // Group: transactions
   const transactions = program
@@ -178,6 +191,8 @@ export async function buildProgram(): Promise<Command> {
   loans.addCommand(markPaidLoanCommand);
   loans.addCommand(unmarkPaidLoanCommand);
   loans.addCommand(deleteLoanCommand);
+  loans.addCommand(reorderLoansCommand);
+  loans.addCommand(loanIconsCommand);
 
   // Group: stats
   const stats = program.command("stats").description("Financial statistics");
@@ -189,8 +204,9 @@ export async function buildProgram(): Promise<Command> {
   // Group: categories
   const categories = program
     .command("categories")
-    .description("View categories");
+    .description("Manage categories");
   categories.addCommand(listCategoriesCommand);
+  categories.addCommand(createCategoryCommand);
 
   // Group: exchange-rate
   const exchangeRate = program
