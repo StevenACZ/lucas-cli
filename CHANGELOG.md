@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-03
+
 ### Added
 
 - `LUCAS_CONFIG_DIR` selects an isolated private credentials directory for
