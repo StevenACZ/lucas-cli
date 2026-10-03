@@ -13,6 +13,7 @@ import {
 } from "./pay.js";
 import { apiRequest } from "../../lib/api-client.js";
 import { accountsAfterWrite } from "../../lib/effects.js";
+import { parseOptionalNumber } from "../../lib/number-parser.js";
 import { invalidValue } from "../../lib/errors.js";
 import { resolveAccountId, resolveLoanId } from "../../lib/resolve.js";
 import { resourcePath } from "../../lib/resource-path.js";
@@ -20,6 +21,7 @@ import { stripHeavy } from "../../lib/views.js";
 
 export interface MarkPaidLoanOptions {
   currency?: string;
+  exchangeRate?: number | string;
   account?: string;
   accountId?: string;
   notes?: string;
@@ -41,6 +43,8 @@ async function planMarkPaidLoan(id: string, opts: MarkPaidLoanOptions) {
   const loan = await apiRequest<LoanDetails>(
     "GET",
     resourcePath("/api/loans", id),
+    undefined,
+    opts.paidAt ? { paymentDate: opts.paidAt } : undefined,
   );
   const installment = findNextPayableInstallment(loan);
   if (!installment) {
@@ -48,22 +52,53 @@ async function planMarkPaidLoan(id: string, opts: MarkPaidLoanOptions) {
       loanId: id,
     });
   }
+  const account = opts.accountId
+    ? await apiRequest<{ currency: string }>(
+        "GET",
+        resourcePath("/api/accounts", opts.accountId),
+      )
+    : undefined;
+  const currency = account?.currency ?? opts.currency ?? loan.currency;
+  const remainingAmount = getInstallmentRemaining(installment);
+  const exchangeRate = parseOptionalNumber(
+    opts.exchangeRate,
+    "--exchange-rate",
+  );
+  if (exchangeRate !== undefined && exchangeRate <= 0) {
+    throw invalidValue("--exchange-rate must be positive");
+  }
+  const crossCurrency = currency !== loan.currency;
+  if (crossCurrency && exchangeRate === undefined) {
+    throw invalidValue(
+      "--exchange-rate is required for a cross-currency payment",
+    );
+  }
+  const amount = crossCurrency
+    ? Math.round((remainingAmount / exchangeRate!) * 100) / 100
+    : remainingAmount;
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw invalidValue("Converted payment must be at least one cent");
+  }
   const payOpts: PayLoanOptions = {
-    amount: getInstallmentRemaining(installment),
-    currency: opts.currency,
+    amount,
+    currency: account?.currency ?? opts.currency,
+    ...(crossCurrency && { loanAmount: remainingAmount, exchangeRate }),
     accountId: opts.accountId,
     notes: opts.notes,
     paidAt: opts.paidAt,
     verified: opts.verified,
   };
-  return { installment, payOpts };
+  return { installment, payOpts, remainingAmount };
 }
 
 export async function executeMarkPaidLoan(
   id: string,
   opts: MarkPaidLoanOptions,
 ): Promise<PayLoanExecutionResult & Record<string, unknown>> {
-  const { installment, payOpts } = await planMarkPaidLoan(id, opts);
+  const { installment, payOpts, remainingAmount } = await planMarkPaidLoan(
+    id,
+    opts,
+  );
   const result = await executePayLoan(id, payOpts);
   const afterInstallment = result.loan?.installments.find((item) =>
     installment.id !== undefined
@@ -78,7 +113,7 @@ export async function executeMarkPaidLoan(
       id: installment.id,
       sequence: installment.sequence,
       dueDate: installment.dueDate,
-      remainingAmount: payOpts.amount,
+      remainingAmount,
       ...summarizeSettlement(afterInstallment),
     },
   };
@@ -88,10 +123,13 @@ export async function runMarkPaidLoan(ref: string, opts: MarkPaidLoanOptions) {
   const id = await resolveLoanId(ref);
   const accountId = await resolveAccountId(opts.account ?? opts.accountId);
   if (opts.dryRun) {
-    const { installment, payOpts } = await planMarkPaidLoan(id, {
-      ...opts,
-      accountId,
-    });
+    const { installment, payOpts, remainingAmount } = await planMarkPaidLoan(
+      id,
+      {
+        ...opts,
+        accountId,
+      },
+    );
     output.success({
       dryRun: true,
       request: {
@@ -103,7 +141,7 @@ export async function runMarkPaidLoan(ref: string, opts: MarkPaidLoanOptions) {
         id: installment.id,
         sequence: installment.sequence,
         dueDate: installment.dueDate,
-        remainingAmount: payOpts.amount,
+        remainingAmount,
       },
     });
     return;
@@ -120,8 +158,18 @@ export const markPaidLoanCommand = new Command("mark-paid")
     "Pay the whole remaining of the next pending installment (same payment as loans pay)",
   )
   .argument("<loan>", "Loan name or id")
-  .option("--currency <code>", "Payment currency")
-  .option("--account <name|id>", "Paying account name or id")
+  .option(
+    "--currency <code>",
+    "Payment currency (paying account currency wins)",
+  )
+  .option(
+    "--exchange-rate <rate>",
+    "Positive payment→loan rate, required across currencies; payment rounded to cents",
+  )
+  .option(
+    "--account <name|id>",
+    "Paying account name or id (omit to record without debiting an account)",
+  )
   .addOption(new Option("--account-id <id>").hideHelp())
   .option("--notes <notes>", "Payment notes")
   .option("--paid-at <date>", "Payment day (YYYY-MM-DD)")

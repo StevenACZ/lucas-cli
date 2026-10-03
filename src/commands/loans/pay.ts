@@ -60,30 +60,45 @@ export async function executePayLoan(
 ): Promise<PayLoanExecutionResult> {
   const body = buildPayLoanPayload(opts);
   const loanPath = resourcePath("/api/loans", id);
+  const query = opts.paidAt ? { paymentDate: opts.paidAt } : undefined;
   const beforeLoan = opts.verified
-    ? await apiRequest<LoanDetails>("GET", loanPath)
+    ? await apiRequest<LoanDetails>("GET", loanPath, undefined, query)
     : undefined;
-  const payment = await apiRequest(
-    "POST",
-    resourcePath("/api/loans", id, "pay"),
-    body,
-  );
+  const payment = await apiRequest<{
+    paymentId?: string;
+    loan?: LoanDetails;
+  }>("POST", resourcePath("/api/loans", id, "pay"), body);
   if (!beforeLoan) return { payment };
   let afterLoan: LoanDetails;
   try {
-    afterLoan = await apiRequestOrThrow<LoanDetails>("GET", loanPath);
+    afterLoan = await apiRequestOrThrow<LoanDetails>(
+      "GET",
+      loanPath,
+      undefined,
+      query,
+    );
   } catch {
     // The payment is already persisted; a failed re-read must never be
     // reported as a failed payment or the caller retries a non-idempotent POST.
     return { payment, verification: loanVerificationUnavailable() };
   }
   const targetInstallment = findNextPayableInstallment(beforeLoan);
-  const expectedLoanReduction =
-    typeof body.loanAmount === "number"
-      ? body.loanAmount
-      : !body.payCurrency || body.payCurrency === beforeLoan.currency
-        ? (body.payAmount as number)
-        : undefined;
+  const recordedPayment = payment.paymentId
+    ? (afterLoan.payments?.find((item) => item.id === payment.paymentId) ??
+      payment.loan?.payments?.find((item) => item.id === payment.paymentId))
+    : undefined;
+  const expectedLoanReduction = recordedPayment?.loanAmount;
+  if (
+    typeof expectedLoanReduction !== "number" ||
+    !Number.isFinite(expectedLoanReduction) ||
+    expectedLoanReduction <= 0
+  ) {
+    return {
+      payment,
+      loan: afterLoan,
+      verification: loanVerificationUnavailable(),
+    };
+  }
   return {
     payment,
     loan: afterLoan,
@@ -128,7 +143,10 @@ export const payLoanCommand = new Command("pay")
     "Amount credited in the loan currency (cross-currency payments)",
   )
   .option("--exchange-rate <rate>", "Exchange rate payment→loan currency")
-  .option("--account <name|id>", "Paying account name or id")
+  .option(
+    "--account <name|id>",
+    "Paying account name or id (omit to record without debiting an account)",
+  )
   .addOption(new Option("--account-id <id>").hideHelp())
   .option("--notes <notes>", "Payment notes")
   .option("--paid-at <date>", "Payment day (YYYY-MM-DD)")

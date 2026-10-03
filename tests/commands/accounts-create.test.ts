@@ -60,6 +60,31 @@ describe("accounts create", () => {
     expect(body).not.toHaveProperty("statementClosingDay");
   });
 
+  it("buildCreateAccountBody sends currentDebt for CREDIT only", () => {
+    const base = { name: "Visa", bank: "BCP", currency: "PEN" };
+
+    expect(
+      buildCreateAccountBody({
+        ...base,
+        type: "CREDIT",
+        creditLimit: "5000",
+        currentDebt: "-20.5",
+      }).currentDebt,
+    ).toBe(-20.5);
+    expect(() =>
+      buildCreateAccountBody({ ...base, type: "DEBIT", currentDebt: "10" }),
+    ).toThrow("--current-debt only applies when --type is CREDIT");
+  });
+
+  it("buildCreateAccountBody sends excluded only when set", () => {
+    const base = { name: "Soles", type: "DEBIT", bank: "BCP" };
+
+    expect(buildCreateAccountBody({ ...base, excluded: true }).excluded).toBe(
+      true,
+    );
+    expect(buildCreateAccountBody(base)).not.toHaveProperty("excluded");
+  });
+
   it("buildCreateAccountBody rejects INVESTMENT while the feature is hidden", () => {
     expect(() =>
       buildCreateAccountBody({

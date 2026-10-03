@@ -51,6 +51,10 @@ lucas accounts create --name "Savings" --type SAVINGS --bank BCP --currency PEN
 lucas accounts update "Visa Signature" --statement-closing-day 20
 lucas accounts delete "Old card" --yes
 lucas accounts archive|unarchive <account>
+lucas accounts reorder "ITK Soles" "Visa Signature" "Cash"   # display order, first to last
+lucas accounts convert-type "Savings" --type DEBIT [--dry-run]
+lucas accounts permanent-delete "Old card" --yes         # active or archived, exact name or id
+lucas accounts empty-archive --yes                       # every archived account, with its movements
 lucas accounts stats
 lucas accounts balance-history "ITK Soles" --range month
 lucas accounts debt-detail "Visa Signature" [--mode current_cycle|last_statement|custom]
@@ -74,6 +78,7 @@ lucas transfers update <id> --notes "Rent"
 lucas transfers delete <id>                     # to the trash
 
 lucas categories list [--type INCOME|EXPENSE] [--search food]
+lucas categories create --name "Pets" --icon paw --color "#F59E0B" [--dry-run]
 
 lucas subscriptions list [--include-inactive] [--type SERVICE]
 lucas subscriptions get Netflix
@@ -91,8 +96,13 @@ lucas subscription-charges pay|mark-paid <charge-id> [--dry-run]
 lucas subscription-charges confirm|revert-payment <charge-id>
 
 lucas loans list
-lucas loans get "Car loan"
+lucas loans get "Car loan" [--payment-date 2026-11-20]   # what is owed on that date
 lucas loans create|update ... [--account "ITK Soles"]   # create takes --dry-run
+lucas loans create ... --icon car [--color "#F59E0B"] [--image ./car.jpg] [--is-primary]
+lucas loans create ... --disbursement-account "ITK Soles"   # books the money received
+lucas loans update "Car loan" --icon motorcycle | --clear-icon | --image ./bike.jpg | --clear-image
+lucas loans icons                                       # icon names and default colors
+lucas loans reorder "Car loan" "Laptop"                 # display order, first to last
 lucas loans pay "Car loan" --amount 750 --account "ITK Soles" [--verified] [--dry-run]
 lucas loans mark-paid "Car loan" --verified [--dry-run]
 lucas loans unmark-paid "Car loan" [--dry-run]
@@ -100,6 +110,7 @@ lucas loans delete "Car loan" --yes
 
 lucas stats summary|overview|monthly|by-category
 lucas settings get|update
+lucas settings update --theme dark --language es --primary-timezone America/Lima
 lucas exchange-rate convert --from USD --to PEN --amount 25
 lucas exchange-rate bcr
 
@@ -255,6 +266,7 @@ echo '[{"account":"ITK Soles","type":"EXPENSE","amount":12.5,"description":"Taxi
 - `LUCAS_TZ` sets the timezone for relative dates and `localDate`.
 - `LUCAS_API_URL` overrides the API base URL (advanced/local development
   only); credentials live in `~/.config/lucas/credentials.json`.
+- `LUCAS_CONFIG_DIR` selects an isolated configuration directory for advanced testing (resolved to an absolute path; default: `~/.config/lucas`).
 - API URLs must use `https://`; plain `http://` is accepted only for
   `localhost`, `127.0.0.1` and `::1`, or with `LUCAS_ALLOW_INSECURE_API=1`.
 - `LUCAS_DISABLE_UPDATE_NOTIFIER=1` suppresses the update banner (it is

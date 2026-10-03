@@ -3,6 +3,12 @@ import { apiRequest } from "../../lib/api-client.js";
 import { output } from "../../lib/output.js";
 import { buildBody } from "../../lib/body-builder.js";
 import { choice } from "../../lib/choices.js";
+import {
+  hexColor,
+  loanAppearanceBody,
+  type LoanAppearanceOptions,
+  LOAN_ICON_NAMES,
+} from "../../lib/loan-appearance.js";
 import { resolveAccountId, resolveLoanId } from "../../lib/resolve.js";
 import { stripHeavy } from "../../lib/views.js";
 import { resourcePath } from "../../lib/resource-path.js";
@@ -45,11 +51,32 @@ export const updateLoanCommand = new Command("update")
   .option("--late-fee-grace-days <n>", "Late fee grace days")
   .option("--late-fee-enabled", "Enable late fees")
   .option("--no-late-fee-enabled", "Disable late fees")
-  .action(async (ref: string, opts) => {
-    const id = await resolveLoanId(ref);
-    opts.clearAccount ||= opts.clearAccountId;
-    opts.accountId = await resolveAccountId(opts.account ?? opts.accountId);
-    const body = buildBody(opts, [
+  .option(
+    "--icon <name>",
+    "Icon name (see: lucas loans icons)",
+    choice(LOAN_ICON_NAMES),
+  )
+  .option(
+    "--color <hex>",
+    "Icon color (#RRGGBB); defaults to the icon's own color",
+    hexColor,
+  )
+  .option("--clear-icon", "Remove the icon and its color")
+  .option("--image <path>", "JPEG photo, at most 256 KB and 1024 px per side")
+  .option("--clear-image", "Remove the photo")
+  .action(runUpdateLoan);
+
+export async function runUpdateLoan(
+  ref: string,
+  opts: Record<string, unknown>,
+): Promise<void> {
+  const id = await resolveLoanId(ref);
+  opts.clearAccount ||= opts.clearAccountId;
+  opts.accountId = await resolveAccountId(
+    (opts.account ?? opts.accountId) as string | undefined,
+  );
+  const body = {
+    ...buildBody(opts, [
       { opt: "name", body: "name" },
       { opt: "principal", body: "principal", type: "number" },
       {
@@ -90,7 +117,9 @@ export const updateLoanCommand = new Command("update")
       },
       { opt: "lateFeeGraceDays", body: "lateFeeGraceDays", type: "number" },
       { opt: "lateFeeEnabled", body: "lateFeeEnabled", type: "boolean" },
-    ]);
-    const data = await apiRequest("PUT", resourcePath("/api/loans", id), body);
-    output.success(stripHeavy(data));
-  });
+    ]),
+    ...(await loanAppearanceBody(opts as LoanAppearanceOptions)),
+  };
+  const data = await apiRequest("PUT", resourcePath("/api/loans", id), body);
+  output.success(stripHeavy(data));
+}
