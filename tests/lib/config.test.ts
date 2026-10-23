@@ -74,12 +74,30 @@ describe("config credential storage", () => {
     );
   });
 
-  it("lets LUCAS_API_URL override stored credentials", async () => {
+  it("lets LUCAS_API_URL pick the API before any login", async () => {
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
     process.env.LUCAS_API_URL = "http://localhost:3301";
     const { getApiUrl } = await import("../../src/lib/config.js");
 
-    expect(getApiUrl({ apiUrl: "https://example.test" })).toBe(
+    expect(getApiUrl()).toBe("http://localhost:3301");
+    expect(getApiUrl({ apiUrl: "http://localhost:3301/" })).toBe(
       "http://localhost:3301",
+    );
+  });
+
+  it("never sends stored credentials to another API", async () => {
+    process.env.LUCAS_API_URL = "https://evil.example";
+    const { getApiUrl } = await import("../../src/lib/config.js");
+
+    expect(() => getApiUrl({ apiUrl: "https://api.lucasapp.app" })).toThrow(
+      expect.objectContaining({
+        code: "API_URL_MISMATCH",
+        exitCode: 3,
+        details: {
+          apiUrl: "https://evil.example",
+          issuedFor: "https://api.lucasapp.app",
+        },
+      }),
     );
   });
 
@@ -142,13 +160,13 @@ describe("config credential storage", () => {
     process.env.LUCAS_API_URL = "https://staging.example.test";
     const { getApiUrl } = await import("../../src/lib/config.js");
 
-    getApiUrl({ apiUrl: "https://api.lucasapp.app" });
-    getApiUrl({ apiUrl: "https://api.lucasapp.app" });
+    getApiUrl();
+    getApiUrl({ apiUrl: "https://staging.example.test" });
 
     expect(stderrWrite).toHaveBeenCalledTimes(1);
     const line = String(stderrWrite.mock.calls[0]?.[0]);
     expect(line).toContain("https://staging.example.test");
-    expect(line).toContain("issued for https://api.lucasapp.app");
+    expect(line).toContain("default is https://api.lucasapp.app");
   });
 
   it("does not warn for the default API", async () => {

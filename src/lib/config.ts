@@ -9,7 +9,7 @@ import {
 } from "fs";
 import { homedir } from "os";
 import { join, resolve } from "path";
-import { invalidValue } from "./errors.js";
+import { CliError, invalidValue } from "./errors.js";
 
 export type DeviceScope = "READ_ONLY" | "FULL";
 
@@ -61,16 +61,11 @@ function validateApiUrl(apiUrl: string, source: string): string {
   return normalized;
 }
 
-function warnApiUrl(apiUrl: string, issuedFor?: string): void {
-  const nonDefault = new URL(apiUrl).origin !== DEFAULT_API_URL;
-  const mismatch = issuedFor !== undefined && issuedFor !== apiUrl;
-  if (warnedApiUrl || (!nonDefault && !mismatch)) return;
+function warnApiUrl(apiUrl: string): void {
+  if (warnedApiUrl || new URL(apiUrl).origin === DEFAULT_API_URL) return;
   warnedApiUrl = true;
-  const reissue = mismatch
-    ? ` The stored credentials were issued for ${issuedFor}; run \`lucas auth login\` against this API if this is intentional.`
-    : "";
   process.stderr.write(
-    `Warning: using LucasApp API ${apiUrl}${nonDefault ? ` (default is ${DEFAULT_API_URL})` : ""}.${reissue}\n`,
+    `Warning: using LucasApp API ${apiUrl} (default is ${DEFAULT_API_URL}).\n`,
   );
 }
 
@@ -88,7 +83,16 @@ export function getApiUrl(creds?: Pick<Credentials, "apiUrl"> | null): string {
     : storedUrl
       ? validateApiUrl(storedUrl, "Stored credentials apiUrl")
       : DEFAULT_API_URL;
-  warnApiUrl(apiUrl, storedUrl);
+  // The bearer only ever goes back to the API that issued it.
+  if (storedUrl && new URL(apiUrl).origin !== new URL(storedUrl).origin) {
+    throw new CliError({
+      code: "API_URL_MISMATCH",
+      message: `The stored credentials were issued for ${storedUrl}, so they are not sent to ${apiUrl}.`,
+      hint: "Unset LUCAS_API_URL, or run `lucas auth login` against this API.",
+      details: { apiUrl, issuedFor: storedUrl },
+    });
+  }
+  warnApiUrl(apiUrl);
   return apiUrl;
 }
 

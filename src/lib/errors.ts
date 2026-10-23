@@ -53,6 +53,7 @@ const AUTH_CODES = new Set([
   "TOKEN_EXPIRED",
   "CLI_READ_ONLY",
   "CLI_FORBIDDEN_ENDPOINT",
+  "API_URL_MISMATCH",
 ]);
 
 export function exitCodeFor(code?: string, status?: number): ExitCode {

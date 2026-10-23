@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-22
+
+### Security
+
+- Stored credentials are only sent to the API that issued them. A
+  `LUCAS_API_URL` that points elsewhere fails with `API_URL_MISMATCH` (exit 3)
+  instead of sending the token to that host.
+- `lucas auth logout` keeps the local credentials when the server revocation
+  fails, so a live token is never forgotten; it reports `REVOKE_FAILED`, and
+  `--force` removes them anyway. An expired or already revoked token is
+  cleared as before.
+
 ## [1.2.0] - 2026-10-03
 
 ### Added
