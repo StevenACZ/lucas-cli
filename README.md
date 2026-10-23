@@ -32,7 +32,9 @@ permissions) with the token, its scope, and its expiry, and prints a JSON
 confirmation to stdout. Progress text goes to stderr, so scripted callers can
 parse stdout only. `status` shows the local token info (including scope);
 `--remote` also verifies the token against the API. `logout` revokes the token
-server-side and deletes the local credentials.
+server-side and deletes the local credentials; when the revocation cannot reach
+the API it keeps them and fails with `REVOKE_FAILED`, and `logout --force`
+deletes them anyway.
 
 ## Commands
 
@@ -285,6 +287,9 @@ echo '[{"account":"ITK Soles","type":"EXPENSE","amount":12.5,"description":"Taxi
 - The default production API is `https://api.lucasapp.app`.
 - `LUCAS_API_URL` is intended for local development and advanced testing. Normal
   users should keep the default production URL.
+- Stored credentials are only sent to the API that issued them: pointing
+  `LUCAS_API_URL` at another host fails with `API_URL_MISMATCH` instead of
+  sending the token there.
 - Never commit `.env`, `.npmrc`, credentials, keys, certificates, service
   account files, database dumps, or private fixtures.
 
