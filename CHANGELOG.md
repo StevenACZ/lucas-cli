@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- A category name given for an expense, such as `--fee-category Investments`,
+  now matches savings and investment categories too, as the app does.
+
 ## [1.2.1] - 2026-10-22
 
 ### Security
