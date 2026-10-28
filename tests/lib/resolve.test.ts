@@ -36,6 +36,13 @@ const categories = [
     type: "INCOME",
     isDefault: true,
   },
+  {
+    id: "cat_investments",
+    name: "Investments",
+    slug: "investments",
+    type: "INVESTMENT",
+    isDefault: true,
+  },
 ];
 
 const loans = [
@@ -146,6 +153,15 @@ describe("resolve accounts", () => {
 describe("resolve categories", () => {
   it("filters by type before matching", async () => {
     expect((await resolveCategory("sal", "INCOME")).id).toBe("cat_salary");
+  });
+
+  it("counts investment categories as expenses", async () => {
+    expect((await resolveCategory("Investments", "EXPENSE")).id).toBe(
+      "cat_investments",
+    );
+    await expect(
+      resolveCategory("Investments", "INCOME"),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("breaks a same-name tie by the most recently used copy", async () => {

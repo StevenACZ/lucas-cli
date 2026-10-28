@@ -179,6 +179,12 @@ export async function resolveSubscriptionId(
   return String(subscription.id);
 }
 
+// Savings and investment categories are money going out, as in the app.
+function fitsType(categoryType: unknown, wantedType: string): boolean {
+  if (wantedType === "INCOME") return categoryType === "INCOME";
+  return categoryType !== "INCOME" && categoryType !== "TRANSFER";
+}
+
 function pickCategory(
   all: Row[],
   ref: string,
@@ -188,7 +194,7 @@ function pickCategory(
   const wantedType = type?.toUpperCase();
   const typed =
     wantedType === "INCOME" || wantedType === "EXPENSE"
-      ? all.filter((category) => category.type === wantedType)
+      ? all.filter((category) => fitsType(category.type, wantedType))
       : all;
   return pick(
     "category",
